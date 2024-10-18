@@ -1,4 +1,5 @@
 #include <BuiltinLed.h>
+#include <TcpTransport.h>
 #include <TlsTransport.h>
 #include <Ml307SslTransport.h>
 #include <WifiConfigurationAp.h>
@@ -22,7 +23,8 @@ int answer_flag = 0;
 extern lv_obj_t *label1;
 extern lv_obj_t *label_reply;
 Application::Application()
-    : button_((gpio_num_t)CONFIG_BOOT_BUTTON_GPIO)
+    : boot_button_((gpio_num_t)CONFIG_BOOT_BUTTON_GPIO),
+      volume_up_button_((gpio_num_t)CONFIG_VOLUME_UP_BUTTON_GPIO)
 #ifdef CONFIG_USE_ML307
       ,
       ml307_at_modem_(CONFIG_ML307_TX_PIN, CONFIG_ML307_RX_PIN, 4096),
@@ -201,6 +203,14 @@ void Application::Start()
 
     ESP_LOGI(TAG, "ML307 IMEI: %s", ml307_at_modem_.GetImei().c_str());
     ESP_LOGI(TAG, "ML307 ICCID: %s", ml307_at_modem_.GetIccid().c_str());
+
+    // If low power, the material ready event will be triggered by the modem because of a reset
+    ml307_at_modem_.OnMaterialReady([this]() {
+        ESP_LOGI(TAG, "ML307 material ready");
+        Schedule([this]() {
+            SetChatState(kChatStateIdle);
+        });
+    });
 #else
     // Try to connect to WiFi, if failed, launch the WiFi configuration AP
     auto &wifi_station = WifiStation::GetInstance();
@@ -265,7 +275,8 @@ void Application::Start()
                 {
         Application* app = (Application*)arg;
         app->AudioPlayTask();
-        vTaskDelete(NULL); }, "play_audio", 4096 * 2, this, 5, NULL);
+        vTaskDelete(NULL);
+    }, "play_audio", 4096 * 4, this, 5, NULL);
 
 #ifdef CONFIG_USE_AFE_SR
     wake_word_detect_.OnVadStateChange([this](bool speaking)
@@ -328,9 +339,8 @@ void Application::Start()
     builtin_led.SetGreen();
     builtin_led.BlinkOnce();
 
-    button_.OnClick([this]()
-                    { Schedule([this]()
-                               {
+    boot_button_.OnClick([this]() {
+        Schedule([this]() {
             if (chat_state_ == kChatStateIdle) {
                 SetChatState(kChatStateConnecting);
                 StartWebSocketClient();
@@ -354,8 +364,29 @@ void Application::Start()
                 }
             } }); });
 
-    xTaskCreate([](void *arg)
-                {
+    volume_up_button_.OnClick([this]() {
+        Schedule([this]() {
+            auto volume = audio_device_.output_volume() + 10;
+            if (volume > 100) {
+                volume = 0;
+            }
+            audio_device_.SetOutputVolume(volume);
+#ifdef CONFIG_USE_DISPLAY
+            display_.ShowNotification("Volume\n" + std::to_string(volume));
+#endif
+        });
+    });
+
+    volume_up_button_.OnLongPress([this]() {
+        Schedule([this]() {
+            audio_device_.SetOutputVolume(0);
+#ifdef CONFIG_USE_DISPLAY
+            display_.ShowNotification("Volume\n0");
+#endif
+        });
+    });
+
+    xTaskCreate([](void* arg) {
         Application* app = (Application*)arg;
         app->MainLoop();
         vTaskDelete(NULL); }, "main_loop", 4096 * 2, this, 5, NULL);
@@ -500,7 +531,9 @@ void Application::AudioEncodeTask()
                 auto protocol = AllocateBinaryProtocol(opus, opus_size);
                 Schedule([this, protocol, opus_size]() {
                     if (ws_client_ && ws_client_->IsConnected()) {
-                        ws_client_->Send(protocol, sizeof(BinaryProtocol) + opus_size, true);
+                        if (!ws_client_->Send(protocol, sizeof(BinaryProtocol) + opus_size, true)) {
+                            ESP_LOGE(TAG, "Failed to send audio data");
+                        }
                     }
                     heap_caps_free(protocol);
                 }); });
@@ -637,11 +670,16 @@ void Application::StartWebSocketClient()
         delete ws_client_;
     }
 
+    std::string url = CONFIG_WEBSOCKET_URL;
     std::string token = "Bearer " + std::string(CONFIG_WEBSOCKET_ACCESS_TOKEN);
 #ifdef CONFIG_USE_ML307
     ws_client_ = new WebSocket(new Ml307SslTransport(ml307_at_modem_, 0));
 #else
-    ws_client_ = new WebSocket(new TlsTransport());
+    if (url.find("wss://") == 0) {
+        ws_client_ = new WebSocket(new TlsTransport());
+    } else {
+        ws_client_ = new WebSocket(new TcpTransport());
+    }
 #endif
     ws_client_->SetHeader("Authorization", token.c_str());
     ws_client_->SetHeader("Device-Id", SystemInfo::GetMacAddress().c_str());
@@ -711,7 +749,16 @@ memset(minimax_content, 0, sizeof(minimax_content));
         ESP_LOGI(TAG, "minimax_content: %s", minimax_content);
         label_ask_set_text(minimax_content);
                     }
+                } else if (strcmp(type->valuestring, "llm") == 0) {
+                    auto emotion = cJSON_GetObjectItem(root, "emotion");
+                    if (emotion != NULL) {
+                        ESP_LOGD(TAG, "EMOTION: %s", emotion->valuestring);
+                    }
+                } else {
+                    ESP_LOGW(TAG, "Unknown message type: %s", type->valuestring);
                 }
+            } else {
+                ESP_LOGE(TAG, "Missing message type, data: %s", data);
             }
             cJSON_Delete(root);
         } });
@@ -731,8 +778,9 @@ memset(minimax_content, 0, sizeof(minimax_content));
             SetChatState(kChatStateIdle);
         }); });
 
-    if (!ws_client_->Connect(CONFIG_WEBSOCKET_URL))
-    {
+    // if (!ws_client_->Connect(CONFIG_WEBSOCKET_URL))
+    // {
+    if (!ws_client_->Connect(url.c_str())) {
         ESP_LOGE(TAG, "Failed to connect to websocket server");
         return;
     }
