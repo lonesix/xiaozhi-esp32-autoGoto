@@ -333,6 +333,38 @@ void Application::Start()
                 audio_encode_queue_.emplace_back(std::move(data));
                 cv_.notify_all();
             } }); });
+    audio_processor_.OnVadIsOpen([this]() -> bool
+                    { 
+            if (chat_state_ == kChatStateListening) {
+                return true;
+            } 
+            return false;
+            });
+    audio_processor_.OnVadWsSendFlag([this](bool vad_flag)
+                                    { Schedule([this, vad_flag]()
+                                                  {
+            if (ws_client_ && ws_client_->IsConnected())
+            {
+                // if (vad_flag ==true)
+                // {
+                //     char * vad_state = "start";
+                // }else
+                // {
+                //     char * vad_state = "end";
+                // }
+                
+                
+                cJSON *root = cJSON_CreateObject();
+                cJSON_AddStringToObject(root, "type", "vad");
+                cJSON_AddStringToObject(root, "state", (vad_flag == true)?"start":"end");
+                char *json = cJSON_PrintUnformatted(root);
+
+                std::lock_guard<std::mutex> lock(mutex_);
+                ws_client_->Send(json);
+                cJSON_Delete(root);
+                free(json);
+            }                                        
+            }); });
 #endif
 
     // Blink the LED to indicate the device is running
@@ -391,6 +423,7 @@ void Application::Start()
         app->MainLoop();
         vTaskDelete(NULL); }, "main_loop", 4096 * 2, this, 5, NULL);
     label_ask_set_text("可以唤醒我啦");
+    audio_device_.SetOutputVolume(80);
     // Launch a task to check for new firmware version
     // xTaskCreate([](void* arg) {
     //     Application* app = (Application*)arg;
@@ -531,6 +564,7 @@ void Application::AudioEncodeTask()
                 auto protocol = AllocateBinaryProtocol(opus, opus_size);
                 Schedule([this, protocol, opus_size]() {
                     if (ws_client_ && ws_client_->IsConnected()) {
+                        ESP_LOGI(TAG, "send audio data...");
                         if (!ws_client_->Send(protocol, sizeof(BinaryProtocol) + opus_size, true)) {
                             ESP_LOGE(TAG, "Failed to send audio data");
                         }
@@ -671,6 +705,7 @@ void Application::StartWebSocketClient()
     }
 
     std::string url = "ws://47.113.147.78";//CONFIG_WEBSOCKET_URL;
+    // std::string url = CONFIG_WEBSOCKET_URL;//CONFIG_WEBSOCKET_URL;
     std::string token = "Bearer " + std::string(CONFIG_WEBSOCKET_ACCESS_TOKEN);
 #ifdef CONFIG_USE_ML307
     ws_client_ = new WebSocket(new Ml307SslTransport(ml307_at_modem_, 0));
@@ -703,7 +738,7 @@ void Application::StartWebSocketClient()
     ws_client_->OnData([this](const char *data, size_t len, bool binary)
                        {
         if (binary) {
-            ESP_LOGI(TAG,"reiceive binary....");
+            // ESP_LOGI(TAG,"reiceive binary....");
             auto protocol = (BinaryProtocol*)data;
 
             auto packet = new AudioPacket();

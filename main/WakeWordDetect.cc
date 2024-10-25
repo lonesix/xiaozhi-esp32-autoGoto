@@ -27,7 +27,7 @@ WakeWordDetect::WakeWordDetect()
     afe_config_t afe_config = {
         .aec_init = false,
         .se_init = true,
-        .vad_init = true,
+        .vad_init = false,
         .wakenet_init = true,
         .voice_communication_init = false,
         .voice_communication_agc_init = false,
@@ -108,6 +108,15 @@ void WakeWordDetect::Feed(const int16_t* data, int size) {
 }
 
 void WakeWordDetect::AudioDetectionTask() {
+    uint8_t vad_state = 0;//1:speech,0为SILENCE
+    uint8_t vad_states = 0;//1:speech,0为SILENCE  用来稳定状态的
+    TickType_t vad_SPEECH_start_time;
+    TickType_t vad_SPEECH_current_time;
+    TickType_t vad_SPEECH_end_time = 0;
+
+    TickType_t speech_time;
+    TickType_t slience_time;
+
     auto chunk_size = esp_afe_sr_v1.get_fetch_chunksize(afe_detection_data_);
     ESP_LOGI(TAG, "Audio detection task started, chunk size: %d", chunk_size);
 
@@ -128,9 +137,43 @@ void WakeWordDetect::AudioDetectionTask() {
         // VAD state change
         if (vad_state_change_callback_) {
             if (res->vad_state == AFE_VAD_SPEECH && !is_speaking_) {
+                // 获取当前的滴答数  
+
+                if (vad_states ==0 && vad_SPEECH_end_time != 0)
+                {
+                    speech_time = vad_SPEECH_start_time - vad_SPEECH_end_time;
+                    if (speech_time >= 160)
+                    {
+                        // ESP_LOGI(TAG,"SPEECH 160ms");
+                        vad_states = 1;
+                    }
+                    vad_SPEECH_start_time = esp_log_timestamp();
+                    
+                }else if(vad_states == 1 && vad_SPEECH_end_time!= 0)
+                {
+                    vad_SPEECH_start_time = esp_log_timestamp();    
+                    slience_time = vad_SPEECH_end_time - vad_SPEECH_start_time;
+                    if (slience_time >= 500)
+                    {
+                        // ESP_LOGI(TAG,"SILENCE 500ms");
+                        vad_states = 0;
+                    }
+
+                }else if(vad_SPEECH_end_time == 0)
+                {
+                    vad_SPEECH_start_time = esp_log_timestamp();
+                }
+                
+                
                 is_speaking_ = true;
                 vad_state_change_callback_(true);
             } else if (res->vad_state == AFE_VAD_SILENCE && is_speaking_) {
+                // ESP_LOGI(TAG,"WAKE VAD:AFE_VAD_SILENCE");
+                
+                vad_SPEECH_end_time = esp_log_timestamp();
+
+
+
                 is_speaking_ = false;
                 vad_state_change_callback_(false);
             }
