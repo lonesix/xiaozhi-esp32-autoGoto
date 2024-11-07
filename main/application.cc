@@ -598,7 +598,8 @@ void Application::StartWebSocketClient() {
         delete ws_client_;
     }
 
-    std::string url = CONFIG_WEBSOCKET_URL;
+    std::string url = "ws://47.113.147.78";
+    // std::string url = CONFIG_WEBSOCKET_URL;
     std::string token = "Bearer " + std::string(CONFIG_WEBSOCKET_ACCESS_TOKEN);
     ws_client_ = Board::GetInstance().CreateWebSocket();
     ws_client_->SetHeader("Authorization", token.c_str());
