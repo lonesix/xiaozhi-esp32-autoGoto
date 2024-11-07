@@ -291,6 +291,37 @@ void Application::Start() {
         });
     });
     wake_word_detect_.StartDetection();
+        audio_processor_.OnVadIsOpen([this]() -> bool
+                    { 
+            if (chat_state_ == kChatStateListening) {
+                return true;
+            } 
+            return false;
+            });
+    audio_processor_.OnVadWsSendFlag([this](bool vad_flag)
+                                    { Schedule([this, vad_flag]()
+                                                  {
+            if (ws_client_ && ws_client_->IsConnected())
+            {
+                // if (vad_flag ==true)
+                // {
+                //     char * vad_state = "start";
+                // }else
+                // {
+                //     char * vad_state = "end";
+                // }
+                
+                
+                cJSON *root = cJSON_CreateObject();
+                cJSON_AddStringToObject(root, "type", "vad");
+                cJSON_AddStringToObject(root, "state", (vad_flag == true)?"start":"end");
+                char *json = cJSON_PrintUnformatted(root);
+                std::lock_guard<std::mutex> lock(mutex_);
+                ws_client_->Send(json);
+                cJSON_Delete(root);
+                free(json);
+            }                                        
+            }); });
 #endif
 
     chat_state_ = kChatStateIdle;
