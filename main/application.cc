@@ -225,11 +225,11 @@ void Application::Start() {
     }, "main_loop", main_loop_stack_size, this, 1, main_loop_task_stack_, &main_loop_task_buffer_);
 
     // Launch a task to check for new firmware version
-    xTaskCreate([](void* arg) {
-        Application* app = (Application*)arg;
-        app->CheckNewVersion();
-        vTaskDelete(NULL);
-    }, "check_new_version", 4096 * 2, this, 1, NULL);
+    // xTaskCreate([](void* arg) {
+    //     Application* app = (Application*)arg;
+    //     app->CheckNewVersion();
+    //     vTaskDelete(NULL);
+    // }, "check_new_version", 4096 * 2, this, 1, NULL);
 
 #ifdef CONFIG_USE_AFE_SR
     audio_processor_.Initialize(codec->input_channels(), codec->input_reference());
@@ -598,8 +598,8 @@ void Application::StartWebSocketClient() {
         delete ws_client_;
     }
 
-    std::string url = "ws://47.113.147.78";
-    // std::string url = CONFIG_WEBSOCKET_URL;
+    // std::string url = "ws://47.113.147.78";
+    std::string url = CONFIG_WEBSOCKET_URL;
     std::string token = "Bearer " + std::string(CONFIG_WEBSOCKET_ACCESS_TOKEN);
     ws_client_ = Board::GetInstance().CreateWebSocket();
     ws_client_->SetHeader("Authorization", token.c_str());
