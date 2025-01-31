@@ -236,12 +236,21 @@ void Application::Start() {
 
     // 启动串口接收任务
     xTaskCreate([](void *arg)
-                {
+    {
         Application* app = (Application*)arg;
         while (true) {
             app->uc_uart->receiveDataCjson();
             vTaskDelay(pdMS_TO_TICKS(10));  // 每 ms 检查一次接收的数据
     } }, "uart_receive_task", 4096, this, 1, nullptr);
+
+    xTaskCreate([](void *arg)
+    {
+        Application* app = (Application*)arg;
+        while (true) {
+            if(app->test_yb)
+                app->UpdateIotContent();
+            vTaskDelay(pdMS_TO_TICKS(6000));  // 每 ms 检查一次接收的数据
+    } }, "testyb_task", 4096, this, 1, nullptr);
 
 #if CONFIG_IDF_TARGET_ESP32S3
     audio_processor_.Initialize(codec->input_channels(), codec->input_reference());
@@ -331,6 +340,7 @@ void Application::Start() {
         last_iot_states_.clear();
         auto& thing_manager = iot::ThingManager::GetInstance();
         protocol_->SendIotDescriptors(thing_manager.GetDescriptorsJson());
+        test_yb = true;
     });
     protocol_->OnAudioChannelClosed([this, &board]() {
         board.SetPowerSaveMode(true);
@@ -393,13 +403,28 @@ void Application::Start() {
                 });
             }
         } else if (strcmp(type->valuestring, "iot") == 0) {
-            auto commands = cJSON_GetObjectItem(root, "commands");
-            if (commands != NULL) {
-                auto& thing_manager = iot::ThingManager::GetInstance();
-                for (int i = 0; i < cJSON_GetArraySize(commands); ++i) {
-                    auto command = cJSON_GetArrayItem(commands, i);
-                    thing_manager.Invoke(command);
+            // auto commands = cJSON_GetObjectItem(root, "commands");
+            // if (commands != NULL) {
+            //     auto& thing_manager = iot::ThingManager::GetInstance();
+            //     for (int i = 0; i < cJSON_GetArraySize(commands); ++i) {
+            //         auto command = cJSON_GetArrayItem(commands, i);
+            //         thing_manager.Invoke(command);
+            //     }
+            // }
+            auto iot_content = cJSON_GetObjectItem(root, "content");
+            if (iot_content != NULL) {
+                auto iot_name = cJSON_GetObjectItem(iot_content, "name");
+                auto iot_type = cJSON_GetObjectItem(iot_content, "type");
+                auto return_type = "";
+                if (strcmp(iot_type->valuestring, "read") == 0){
+                    return_type = "sensor";
                 }
+                else if (strcmp(iot_type->valuestring, "write") == 0){
+                    return_type = "command";
+                }
+                auto iot_property = cJSON_GetObjectItem(iot_content, "property");
+                auto iot_value = cJSON_GetObjectItem(iot_content, "value");
+                protocol_->SendIotContent(iot_name->valuestring, return_type, iot_property->valuestring, iot_value->valuestring);
             }
         }
     });
@@ -645,6 +670,18 @@ void Application::UpdateIotStates() {
     }
 }
 
+void Application::UpdateIotContent() {
+
+    auto name = "DHT11";
+    auto type = "sensor";       
+    auto property = "hum";     
+    auto value = "25.5";
+    Schedule([this,name, type, property, value](){ 
+        protocol_->SendIotContent(name, type, property, value); 
+    });
+    
+}
+
 void Application::sendCjsonToSerial(const char *type, const char *text)
 {
     // 创建一个 cJSON 对象
@@ -779,3 +816,4 @@ void Application::ProcessReceivedJson(cJSON *root)
         ESP_LOGW(TAG, "Unknown JSON type: %s", type);
     }
 }
+

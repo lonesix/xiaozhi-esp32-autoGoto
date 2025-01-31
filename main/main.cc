@@ -13,7 +13,7 @@
 extern "C" void app_main(void)
 {
     // 关闭所有日志输出
-    esp_log_level_set("*", ESP_LOG_NONE);
+    // esp_log_level_set("*", ESP_LOG_NONE);
 
     // 如果需要重新开启某个组件的日志输出
     // esp_log_level_set("COMPONENT_TAG", ESP_LOG_INFO);
