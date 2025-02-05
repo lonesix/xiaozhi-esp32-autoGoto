@@ -424,6 +424,13 @@ void Application::Start() {
                 }
                 auto iot_property = cJSON_GetObjectItem(iot_content, "property");
                 auto iot_value = cJSON_GetObjectItem(iot_content, "value");
+
+                //根据云服务器值解析后 通过串口 下发 协处理器
+                //Application::sendCjsonToSerial(const char *type, const char *text)
+
+
+
+
                 protocol_->SendIotContent(iot_name->valuestring, return_type, iot_property->valuestring, iot_value->valuestring);
             }
         }
