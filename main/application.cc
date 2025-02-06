@@ -798,6 +798,11 @@ void Application::ProcessReceivedJson(cJSON *root)
     //     return;
     // }
     
+    if (!test_yb)
+    {
+        return;
+    }
+    
     
     // 错误判断
     cJSON *error_item = cJSON_GetObjectItem(root, "error");
