@@ -9,9 +9,9 @@
 #include <cJSON.h>
 
 // 串口配置
-#define UART_NUM    UART_NUM_0        // 使用UART1
-#define TX_PIN      10                // TX引脚
-#define RX_PIN      11                // RX引脚
+#define UART_NUM    UART_NUM_1        // 使用UART1
+#define TX_PIN      11                // TX引脚
+#define RX_PIN      10                // RX引脚
 #define BUF_SIZE    1024              // 缓冲区大小
 #define BAUD_RATE   115200            // 波特率
 

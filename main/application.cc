@@ -289,14 +289,14 @@ void Application::Start()
             vTaskDelay(pdMS_TO_TICKS(10));  // 每 ms 检查一次接收的数据
     } }, "uart_receive_task", 4096, this, 1, nullptr);
 
-    xTaskCreate([](void *arg)
-    {
-        Application* app = (Application*)arg;
-        while (true) {
-            if(app->test_yb)
-                app->UpdateIotContent();
-            vTaskDelay(pdMS_TO_TICKS(6000));  // 每 ms 检查一次接收的数据
-    } }, "testyb_task", 4096, this, 1, nullptr);
+    // xTaskCreate([](void *arg)
+    // {
+    //     Application* app = (Application*)arg;
+    //     while (true) {
+    //         if(app->test_yb)
+    //             app->UpdateIotContent();
+    //         vTaskDelay(pdMS_TO_TICKS(6000));  // 每 ms 检查一次接收的数据
+    // } }, "testyb_task", 4096, this, 1, nullptr);
 
 #if CONFIG_IDF_TARGET_ESP32S3
     audio_processor_.Initialize(codec->input_channels(), codec->input_reference());
@@ -753,7 +753,7 @@ void Application::sendCjsonToSerial(const char *name, const char *type, const ch
     cJSON_AddStringToObject(uc_json, "value", value);
 
     // 发送该 cJSON 对象
-    // uc_uart->sendData(uc_json);
+    uc_uart->sendData(uc_json);
 
     // 将 cJSON 对象转换为字符串
     char *json_str = cJSON_PrintUnformatted(uc_json); // 不格式化 JSON，节省空间
@@ -762,7 +762,7 @@ void Application::sendCjsonToSerial(const char *name, const char *type, const ch
     {
         // 打印日志
         ESP_LOGI(TAG, "Sent JSON: %s", json_str);
-        printf("\n%s\n", json_str);
+        // printf("\n%s\n", json_str);
 
         // 释放动态分配的内存
         free(json_str);
@@ -787,16 +787,16 @@ extern "C" void ChangeVolumn_cc(int volum)
 void Application::ProcessReceivedJson(cJSON *root)
 {   
     static bool Isinit_xie = false;
-    // 协处理器是否初始化成功
-    if (Isinit_xie == false)
-    {
-        cJSON *init_item = cJSON_GetObjectItem(root, "Init");
-        if (init_item != nullptr )
-        {
-            Isinit_xie = true;  
-        }
-        return;
-    }
+    // // 协处理器是否初始化成功
+    // if (Isinit_xie == false)
+    // {
+    //     cJSON *init_item = cJSON_GetObjectItem(root, "Init");
+    //     if (init_item != nullptr )
+    //     {
+    //         Isinit_xie = true;  
+    //     }
+    //     return;
+    // }
     
     
     // 错误判断
