@@ -756,21 +756,21 @@ void Application::sendCjsonToSerial(const char *name, const char *type, const ch
     uc_uart->sendData(uc_json);
 
     // 将 cJSON 对象转换为字符串
-    char *json_str = cJSON_PrintUnformatted(uc_json); // 不格式化 JSON，节省空间
+    // char *json_str = cJSON_PrintUnformatted(uc_json); // 不格式化 JSON，节省空间
 
-    if (json_str != NULL)
-    {
-        // 打印日志
-        ESP_LOGI(TAG, "Sent JSON: %s", json_str);
-        // printf("\n%s\n", json_str);
+    // if (json_str != NULL)
+    // {
+    //     // 打印日志
+    //     ESP_LOGI(TAG, "Sent JSON: %s", json_str);
+    //     // printf("\n%s\n", json_str);
 
-        // 释放动态分配的内存
-        free(json_str);
-    }
-    else
-    {
-        ESP_LOGE(TAG, "Failed to convert cJSON to string");
-    }
+    //     // 释放动态分配的内存
+    //     free(json_str);
+    // }
+    // else
+    // {
+    //     ESP_LOGE(TAG, "Failed to convert cJSON to string");
+    // }
 
     // 清理 cJSON 对象
     cJSON_Delete(uc_json);
@@ -804,11 +804,12 @@ void Application::ProcessReceivedJson(cJSON *root)
     if (error_item == nullptr)
     {
         ESP_LOGE(TAG, "ProcessReceivedJson Not error");
-        return;
+        
     }else
     {
         /* 具体错误解析 */
         ESP_LOGE(TAG, "CMD error: %s", error_item->valuestring );
+        return;
     }
     
     // 获取命令返回的
