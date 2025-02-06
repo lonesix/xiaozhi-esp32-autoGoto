@@ -62,7 +62,7 @@ public:
     void StopListening();
     void UpdateIotStates();
     void UpdateIotContent();
-    void sendCjsonToSerial(const char* type, const char* text);
+    void sendCjsonToSerial(const char *name, const char *type, const char *property, const char *value, const char *session_id);
     void ProcessReceivedJson(cJSON* root);
 
 private:

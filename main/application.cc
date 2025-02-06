@@ -425,7 +425,7 @@ void Application::Start()
                     display->SetChatMessage("assistant", text->valuestring);
                     uc_string = text->valuestring;
                     Schedule([this]() {
-                        this->sendCjsonToSerial("tts",uc_string.c_str());
+                        // this->sendCjsonToSerial("tts",uc_string.c_str());
                     });
                 }
             }
@@ -436,7 +436,7 @@ void Application::Start()
                 display->SetChatMessage("user", text->valuestring);
                 uc_string = text->valuestring;
                 Schedule([this]() {
-                    this->sendCjsonToSerial("stt",uc_string.c_str());
+                    // this->sendCjsonToSerial("stt",uc_string.c_str());
                 });
             }
         } else if (strcmp(type->valuestring, "llm") == 0) {
@@ -445,7 +445,7 @@ void Application::Start()
                 display->SetEmotion(emotion->valuestring);
                 uc_string = emotion->valuestring;
                 Schedule([this]() {
-                    this->sendCjsonToSerial("emotion",uc_string.c_str());
+                    // this->sendCjsonToSerial("emotion",uc_string.c_str());
                 });
             }
         } else if (strcmp(type->valuestring, "iot") == 0) {
@@ -463,21 +463,24 @@ void Application::Start()
                 auto iot_type = cJSON_GetObjectItem(iot_content, "type");
                 auto return_type = "";
                 if (strcmp(iot_type->valuestring, "read") == 0){
-                    return_type = "sensor";
+                    return_type = "read";
                 }
                 else if (strcmp(iot_type->valuestring, "write") == 0){
-                    return_type = "command";
+                    return_type = "write";
                 }
                 auto iot_property = cJSON_GetObjectItem(iot_content, "property");
                 auto iot_value = cJSON_GetObjectItem(iot_content, "value");
-
-                //根据云服务器值解析后 通过串口 下发 协处理器
+                auto iot_id = cJSON_GetObjectItem(root, "session_id");
+                //根据云服务器值解析后 通过串口 下发命令给 协处理器
+                //主对协例子：
+                //{"session_id":"4a429e61","name":"SG90","type":"write","property":"angle","value":"15"}
                 //Application::sendCjsonToSerial(const char *type, const char *text)
+                this->sendCjsonToSerial( iot_name->valuestring, return_type, iot_property->valuestring, iot_value->valuestring, iot_id->valuestring);
 
 
 
 
-                protocol_->SendIotContent(iot_name->valuestring, return_type, iot_property->valuestring, iot_value->valuestring);
+                // protocol_->SendIotContent(iot_name->valuestring, return_type, iot_property->valuestring, iot_value->valuestring);
             }
         }
     });
@@ -655,7 +658,7 @@ void Application::SetChatState(ChatState state) {
             display->SetStatus("千机赋能");
             display->SetChatMessage("user", "请问有什么可以帮您吗？");
             // display->SetEmotion("neutral");
-            Schedule([this](){ this->sendCjsonToSerial("status", "Idle"); });
+            Schedule([this](){ /*this->sendCjsonToSerial("status", "Idle");*/ });
 #ifdef CONFIG_IDF_TARGET_ESP32S3
             audio_processor_.Stop();
 #endif
@@ -664,14 +667,14 @@ void Application::SetChatState(ChatState state) {
             builtin_led->SetBlue();
             builtin_led->TurnOn();
             display->SetStatus("连接中...");
-            Schedule([this](){ this->sendCjsonToSerial("status", "Connecting"); });
+            Schedule([this](){ /*this->sendCjsonToSerial("status", "Connecting");*/ });
             break;
         case kChatStateListening:
             builtin_led->SetRed();
             builtin_led->TurnOn();
             display->SetStatus("聆听中...");
             // display->SetEmotion("neutral");
-            Schedule([this](){ this->sendCjsonToSerial("status", "Listening"); });
+            Schedule([this](){ /*this->sendCjsonToSerial("status", "Listening");*/ });
             ResetDecoder();
             opus_encoder_->ResetState();
 #if CONFIG_IDF_TARGET_ESP32S3
@@ -683,7 +686,7 @@ void Application::SetChatState(ChatState state) {
             builtin_led->SetGreen();
             builtin_led->TurnOn();
             display->SetStatus("说话中...");
-            Schedule([this](){ this->sendCjsonToSerial("status", "Speaking"); });
+            Schedule([this](){ /*this->sendCjsonToSerial("status", "Speaking");*/ });
             ResetDecoder();
 #if CONFIG_IDF_TARGET_ESP32S3
             audio_processor_.Stop();
@@ -735,12 +738,19 @@ void Application::UpdateIotContent() {
     
 }
 
-void Application::sendCjsonToSerial(const char *type, const char *text)
+//主对协例子：
+//{"session_id":"4a429e61","name":"SG90","type":"write","property":"angle","value":"15"}
+//name传感器名字，目前有："MPU6050","RC522","DHT11","Body","Hall","Light","Soil","Flame","WaterLevel","WS2812","SG90" 。
+//const std::string& name, const std::string& type, const std::string& property, const std::string& value
+void Application::sendCjsonToSerial(const char *name, const char *type, const char *property, const char *value, const char *session_id)
 {
     // 创建一个 cJSON 对象
     cJSON *uc_json = cJSON_CreateObject();
+    cJSON_AddStringToObject(uc_json, "session_id", session_id);
+    cJSON_AddStringToObject(uc_json, "name", name);
     cJSON_AddStringToObject(uc_json, "type", type);
-    cJSON_AddStringToObject(uc_json, "text", text);
+    cJSON_AddStringToObject(uc_json, "property", property);
+    cJSON_AddStringToObject(uc_json, "value", value);
 
     // 发送该 cJSON 对象
     // uc_uart->sendData(uc_json);
@@ -773,107 +783,144 @@ extern "C" void ChangeVolumn_cc(int volum)
 	board.GetAudioCodec()->SetOutputVolume(volum);
 	// (int)lv_slider_get_value(ui_volumn);
 }
+//协对主解析
 void Application::ProcessReceivedJson(cJSON *root)
-{
-    // 获取 JSON 中的 type 字段
-    cJSON *type_item = cJSON_GetObjectItem(root, "type");
-    if (type_item == nullptr)
+{   
+    static bool Isinit_xie = false;
+    // 协处理器是否初始化成功
+    if (Isinit_xie == false)
     {
-        ESP_LOGE(TAG, "Missing 'type' in received JSON");
+        cJSON *init_item = cJSON_GetObjectItem(root, "Init");
+        if (init_item != nullptr )
+        {
+            Isinit_xie = true;  
+        }
         return;
     }
+    
+    
+    // 错误判断
+    cJSON *error_item = cJSON_GetObjectItem(root, "error");
+    if (error_item == nullptr)
+    {
+        ESP_LOGE(TAG, "ProcessReceivedJson Not error");
+        return;
+    }else
+    {
+        /* 具体错误解析 */
+        ESP_LOGE(TAG, "CMD error: %s", error_item->valuestring );
+    }
+    
+    // 获取命令返回的
+    auto xie_name = cJSON_GetObjectItem(root, "name");
+    auto xie_type = cJSON_GetObjectItem(root, "type");
+    auto xie_property = cJSON_GetObjectItem(root, "property");
+    auto xie_value = cJSON_GetObjectItem(root, "value");
+    auto xie_id = cJSON_GetObjectItem(root, "session_id");
+    // 会话id匹配
 
-    // 根据 type 字段的值进行不同的处理
-    const char *type = type_item->valuestring;
-    if (strcmp(type, "cmd") == 0)
-    {
-        cJSON *text_item = cJSON_GetObjectItem(root, "text");
-        if (text_item != nullptr)
-        {
-            // 判断 text 是否为字符串类型
-            if (cJSON_IsString(text_item))
-            {
-                const char *text = text_item->valuestring;
-                ESP_LOGI(TAG, "Text: %s", text);
-                // 判断 text 是否为 "open"
-                if (strcmp(text, "open") == 0)
-                {
-                    // Application::GetInstance().StartListening();
-                    Schedule([this]()
-                             {
-                                keep_listening_ = true;
-                                if (chat_state_ == kChatStateIdle) {
-                                    if (!protocol_->IsAudioChannelOpened()) {
-                                        SetChatState(kChatStateConnecting);
-                                        if (!protocol_->OpenAudioChannel()) {
-                                            SetChatState(kChatStateIdle);
-                                            ESP_LOGE(TAG, "Failed to open audio channel");
-                                            return;
-                                        }
-                                    }
-                                    protocol_->SendStartListening(kListeningModeAutoStop);
-                                    SetChatState(kChatStateListening);
-                            } });
-                }
-                else if (strcmp(text, "abort") == 0)
-                {
-                    Application::AbortSpeaking(kAbortReasonNone);
-                }
-                else if (strcmp(text, "close") == 0)
-                {
-                    // Application::GetInstance().StopListening();
-                    protocol_->SendStopListening();
-                    SetChatState(kChatStateIdle);
-                }
-                else
-                {
-                    ESP_LOGW(TAG, "Unrecognized command: %s", text);
-                }
-            }
-            // 判断 text 是否为数值类型（整数）
-            else if (cJSON_IsNumber(text_item))
-            {
-            }
-            else
-            {
-                ESP_LOGE(TAG, "Unsupported type for 'text'");
-            }
-        }
-        else
-        {
-            ESP_LOGE(TAG, "Missing 'text' in message");
-        }
-    }
-    else if (strcmp(type, "volume") == 0)
-    {
-        cJSON *text_item = cJSON_GetObjectItem(root, "text");
-        if (text_item != nullptr)
-        {
-            // 判断 text 是否为字符串类型
-            if (cJSON_IsString(text_item))
-            {
-            }
-            // 判断 text 是否为数值类型（整数）
-            else if (cJSON_IsNumber(text_item))
-            {
-                int num = text_item->valueint;
-                auto &board = Board::GetInstance();
-                board.GetAudioCodec()->SetOutputVolume(num);
-                ESP_LOGI(TAG, "Text (Number): %d", num);
-            }
-            else
-            {
-                ESP_LOGE(TAG, "Unsupported type for 'text'");
-            }
-        }
-        else
-        {
-            ESP_LOGE(TAG, "Missing 'text' in message");
-        }
-    }
-    else
-    {
-        ESP_LOGW(TAG, "Unknown JSON type: %s", type);
-    }
+    //
+    // // 获取 JSON 中的 type 字段
+    // cJSON *type_item = cJSON_GetObjectItem(root, "type");
+    // if (type_item == nullptr)
+    // {
+    //     ESP_LOGE(TAG, "Missing 'type' in received JSON");
+    //     return;
+    // }
+
+    // // 根据 type 字段的值进行不同的处理
+    // const char *type = type_item->valuestring;
+    // if (strcmp(type, "cmd") == 0)
+    // {
+    //     cJSON *text_item = cJSON_GetObjectItem(root, "text");
+    //     if (text_item != nullptr)
+    //     {
+    //         // 判断 text 是否为字符串类型
+    //         if (cJSON_IsString(text_item))
+    //         {
+    //             const char *text = text_item->valuestring;
+    //             ESP_LOGI(TAG, "Text: %s", text);
+    //             // 判断 text 是否为 "open"
+    //             if (strcmp(text, "open") == 0)
+    //             {
+    //                 // Application::GetInstance().StartListening();
+    //                 Schedule([this]()
+    //                          {
+    //                             keep_listening_ = true;
+    //                             if (chat_state_ == kChatStateIdle) {
+    //                                 if (!protocol_->IsAudioChannelOpened()) {
+    //                                     SetChatState(kChatStateConnecting);
+    //                                     if (!protocol_->OpenAudioChannel()) {
+    //                                         SetChatState(kChatStateIdle);
+    //                                         ESP_LOGE(TAG, "Failed to open audio channel");
+    //                                         return;
+    //                                     }
+    //                                 }
+    //                                 protocol_->SendStartListening(kListeningModeAutoStop);
+    //                                 SetChatState(kChatStateListening);
+    //                         } });
+    //             }
+    //             else if (strcmp(text, "abort") == 0)
+    //             {
+    //                 Application::AbortSpeaking(kAbortReasonNone);
+    //             }
+    //             else if (strcmp(text, "close") == 0)
+    //             {
+    //                 // Application::GetInstance().StopListening();
+    //                 protocol_->SendStopListening();
+    //                 SetChatState(kChatStateIdle);
+    //             }
+    //             else
+    //             {
+    //                 ESP_LOGW(TAG, "Unrecognized command: %s", text);
+    //             }
+    //         }
+    //         // 判断 text 是否为数值类型（整数）
+    //         else if (cJSON_IsNumber(text_item))
+    //         {
+    //         }
+    //         else
+    //         {
+    //             ESP_LOGE(TAG, "Unsupported type for 'text'");
+    //         }
+    //     }
+    //     else
+    //     {
+    //         ESP_LOGE(TAG, "Missing 'text' in message");
+    //     }
+    // }
+    // else if (strcmp(type, "volume") == 0)
+    // {
+    //     cJSON *text_item = cJSON_GetObjectItem(root, "text");
+    //     if (text_item != nullptr)
+    //     {
+    //         // 判断 text 是否为字符串类型
+    //         if (cJSON_IsString(text_item))
+    //         {
+    //         }
+    //         // 判断 text 是否为数值类型（整数）
+    //         else if (cJSON_IsNumber(text_item))
+    //         {
+    //             int num = text_item->valueint;
+    //             auto &board = Board::GetInstance();
+    //             board.GetAudioCodec()->SetOutputVolume(num);
+    //             ESP_LOGI(TAG, "Text (Number): %d", num);
+    //         }
+    //         else
+    //         {
+    //             ESP_LOGE(TAG, "Unsupported type for 'text'");
+    //         }
+    //     }
+    //     else
+    //     {
+    //         ESP_LOGE(TAG, "Missing 'text' in message");
+    //     }
+    // }
+    // else
+    // {
+    //     ESP_LOGW(TAG, "Unknown JSON type: %s", type);
+    // }
+
+    protocol_->SendIotContent(xie_name->valuestring, xie_type->valuestring, xie_property->valuestring, xie_value->valuestring);
 }
 
