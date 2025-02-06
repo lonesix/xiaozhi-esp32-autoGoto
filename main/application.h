@@ -61,6 +61,7 @@ public:
     void StartListening();
     void StopListening();
     void UpdateIotStates();
+    void UpdateIotContent();
     void sendCjsonToSerial(const char* type, const char* text);
     void ProcessReceivedJson(cJSON* root);
 
@@ -72,6 +73,7 @@ private:
     WakeWordDetect wake_word_detect_;
     AudioProcessor audio_processor_;
 #endif
+    bool test_yb = false;
     UartComm* uc_uart;
     std::string uc_string;
     Ota ota_;

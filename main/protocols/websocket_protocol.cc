@@ -147,6 +147,11 @@ void WebsocketProtocol::ParseServerHello(const cJSON* root) {
         return;
     }
 
+    auto session_id = cJSON_GetObjectItem(root, "session_id");
+    if (session_id != nullptr) {
+        session_id_ = session_id->valuestring;
+    }
+
     auto audio_params = cJSON_GetObjectItem(root, "audio_params");
     if (audio_params != NULL) {
         auto sample_rate = cJSON_GetObjectItem(audio_params, "sample_rate");

@@ -47,6 +47,7 @@ public:
     virtual void SendAbortSpeaking(AbortReason reason);
     virtual void SendIotDescriptors(const std::string& descriptors);
     virtual void SendIotStates(const std::string& states);
+    virtual void SendIotContent(const std::string& name, const std::string& type, const std::string& property, const std::string& value);
 
 protected:
     std::function<void(const cJSON* root)> on_incoming_json_;

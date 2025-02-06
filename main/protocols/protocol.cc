@@ -68,3 +68,30 @@ void Protocol::SendIotStates(const std::string& states) {
     SendText(message);
 }
 
+void Protocol::SendIotContent(const std::string& name, const std::string& type, 
+                              const std::string& property, const std::string& value) {
+    cJSON *root = cJSON_CreateObject();
+    if (!root) {
+        ESP_LOGE("Protocol", "Failed to create JSON object");
+        return;
+    }
+
+    // 添加 JSON 键值对
+    cJSON_AddStringToObject(root, "session_id", session_id_.c_str());
+    cJSON_AddStringToObject(root, "name", name.c_str());
+    cJSON_AddStringToObject(root, "type", type.c_str());
+    cJSON_AddStringToObject(root, "property", property.c_str());
+    cJSON_AddStringToObject(root, "value", value.c_str());
+
+    // 生成 JSON 字符串
+    char *message = cJSON_PrintUnformatted(root);
+    if (message) {
+        ESP_LOGI("Protocol", "Sending JSON: %s", message);
+        SendText(message);
+        free(message);  // 释放内存
+    }
+
+    // 释放 JSON 对象
+    cJSON_Delete(root);
+}
+
