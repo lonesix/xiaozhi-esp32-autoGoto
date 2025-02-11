@@ -15,6 +15,12 @@
 #define BUF_SIZE    1024              // 缓冲区大小
 #define BAUD_RATE   115200            // 波特率
 
+#define CAMERA_UART_NUM    UART_NUM_2        // 使用UART1
+#define CAMERA_TX_PIN      17                // TX引脚
+#define CAMERA_RX_PIN      18                // RX引脚
+#define CAMERA_BUF_SIZE    1024              // 缓冲区大小
+#define CAMERA_BAUD_RATE   9600            // 波特率
+
 // 串口通信类
 class UartComm {
 public:
@@ -26,6 +32,7 @@ public:
     void sendData(cJSON* json);
     void receiveData();                      // 接收数据
     void receiveDataCjson();
+    void receiveCameraDataCjson();
 
 private:
     uart_port_t uart_num;                    // UART端口

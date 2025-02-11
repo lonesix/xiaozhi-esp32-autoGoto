@@ -105,3 +105,27 @@ void UartComm::receiveDataCjson() {
         });
     }
 }
+
+void UartComm::receiveCameraDataCjson()
+{
+    // 清空接收缓冲区以避免读取旧数据
+    memset(rx_buffer, 0, buf_size);
+    int length = uart_read_bytes(uart_num, rx_buffer, buf_size, pdMS_TO_TICKS(10));  // 超时
+    if (length > 0) {
+        rx_buffer[length] = '\0';  // 确保字符串结尾
+        ESP_LOGI(TAG, "Received data: %s", rx_buffer);
+
+        // 尝试解析收到的数据为 cJSON 对象
+        cJSON* root = cJSON_Parse((const char*)rx_buffer);
+        if (root == nullptr) {
+            ESP_LOGE(TAG, "Failed to parse received data as JSON");
+            return;
+        }
+
+        // 调用外部接口处理解析后的 JSON
+        Application::GetInstance().Schedule([root]() {
+            Application::GetInstance().CameraProcessReceivedJson(root);
+            cJSON_Delete(root);  // 在任务执行完后删除 JSON 对象
+        });
+    }
+}

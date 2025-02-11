@@ -63,8 +63,9 @@ public:
     void UpdateIotStates();
     void UpdateIotContent();
     void sendCjsonToSerial(const char *name, const char *type, const char *property, const char *value, const char *session_id);
+    void sendCjsonToCameraSerial(const char *name, const char *type, const char *property, const char *value, const char *session_id);
     void ProcessReceivedJson(cJSON* root);
-
+    void CameraProcessReceivedJson(cJSON* root);
 private:
     Application();
     ~Application();
@@ -75,6 +76,8 @@ private:
 #endif
     bool test_yb = false;
     UartComm* uc_uart;
+    UartComm* camera_uart;
+    std::string camera_string;
     std::string uc_string;
     Ota ota_;
     std::mutex mutex_;

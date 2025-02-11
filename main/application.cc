@@ -39,6 +39,9 @@ Application::Application() : background_task_(4096 * 8) {
 
     uc_uart = new UartComm(UART_NUM, TX_PIN, RX_PIN, BAUD_RATE, BUF_SIZE);
     uc_uart->init();
+    
+    camera_uart = new UartComm(CAMERA_UART_NUM, CAMERA_TX_PIN, CAMERA_RX_PIN, CAMERA_BAUD_RATE, CAMERA_BUF_SIZE);
+    camera_uart->init();
 
     ota_.SetCheckVersionUrl(CONFIG_OTA_VERSION_URL);
     ota_.SetHeader("Device-Id", SystemInfo::GetMacAddress().c_str());
@@ -289,6 +292,15 @@ void Application::Start()
             vTaskDelay(pdMS_TO_TICKS(10));  // 每 ms 检查一次接收的数据
     } }, "uart_receive_task", 4096, this, 1, nullptr);
 
+    // 启动Camera串口接收任务
+    xTaskCreate([](void *arg)
+    {
+        Application* app = (Application*)arg;
+        while (true) {
+            app->camera_uart->receiveCameraDataCjson();
+            vTaskDelay(pdMS_TO_TICKS(10));  // 每 ms 检查一次接收的数据
+    } }, "camera_uart_receive_task", 4096, this, 1, nullptr);
+
     // xTaskCreate([](void *arg)
     // {
     //     Application* app = (Application*)arg;
@@ -475,9 +487,20 @@ void Application::Start()
                 //主对协例子：
                 //{"session_id":"4a429e61","name":"SG90","type":"write","property":"angle","value":"15"}
                 //Application::sendCjsonToSerial(const char *type, const char *text)
-                this->sendCjsonToSerial( iot_name->valuestring, return_type, iot_property->valuestring, iot_value->valuestring, iot_id->valuestring);
 
+                if (strcmp(iot_name->valuestring, "Camera") == 0){
+                    //发给Camera
+                    this->sendCjsonToCameraSerial( iot_name->valuestring, return_type, iot_property->valuestring, iot_value->valuestring, iot_id->valuestring);
+                }else
+                {
+                    //发给协处理器
+                    this->sendCjsonToSerial( iot_name->valuestring, return_type, iot_property->valuestring, iot_value->valuestring, iot_id->valuestring);
+                }
+                
 
+                
+
+                
 
 
                 // protocol_->SendIotContent(iot_name->valuestring, return_type, iot_property->valuestring, iot_value->valuestring);
@@ -775,6 +798,28 @@ void Application::sendCjsonToSerial(const char *name, const char *type, const ch
     // 清理 cJSON 对象
     cJSON_Delete(uc_json);
 }
+
+//主对Camera例子：
+//{"session_id":"4a429e61","name":"Camera","type":"read","property":"color","value":""}
+//const std::string& name, const std::string& type, const std::string& property, const std::string& value
+void Application::sendCjsonToCameraSerial(const char *name, const char *type, const char *property, const char *value, const char *session_id)
+{
+    // 创建一个 cJSON 对象
+    cJSON *Camera_json = cJSON_CreateObject();
+    cJSON_AddStringToObject(Camera_json, "session_id", session_id);
+    cJSON_AddStringToObject(Camera_json, "name", name);
+    cJSON_AddStringToObject(Camera_json, "type", type);
+    cJSON_AddStringToObject(Camera_json, "property", property);
+    cJSON_AddStringToObject(Camera_json, "value", value);
+
+    // 发送该 cJSON 对象
+    camera_uart->sendData(Camera_json);
+
+
+    // 清理 cJSON 对象
+    cJSON_Delete(Camera_json);
+}
+
 #include "ui_events.h"
 extern "C" void ChangeVolumn_cc(int volum)
 {
@@ -929,4 +974,47 @@ void Application::ProcessReceivedJson(cJSON *root)
 
     protocol_->SendIotContent(xie_name->valuestring, xie_type->valuestring, xie_property->valuestring, xie_value->valuestring);
 }
+//Camera对主
+void Application::CameraProcessReceivedJson(cJSON *root)
+{
+    static bool Isinit_camera = false;
+    // // 协处理器是否初始化成功
+    // if (Isinit_xie == false)
+    // {
+    //     cJSON *init_item = cJSON_GetObjectItem(root, "Init");
+    //     if (init_item != nullptr )
+    //     {
+    //         Isinit_xie = true;  
+    //     }
+    //     return;
+    // }
+    
+    if (!test_yb)
+    {
+        return;
+    }
+    
+    
+    // 错误判断
+    cJSON *error_item = cJSON_GetObjectItem(root, "error");
+    if (error_item == nullptr)
+    {
+        ESP_LOGE(TAG, "CameraProcessReceivedJson Not error");
+        
+    }else
+    {
+        /* 具体错误解析 */
+        ESP_LOGE(TAG, "CMD error: %s", error_item->valuestring );
+        return;
+    }
+    
+    // 获取命令返回的
+    auto camera_name = cJSON_GetObjectItem(root, "name");
+    auto camera_type = cJSON_GetObjectItem(root, "type");
+    auto camera_property = cJSON_GetObjectItem(root, "property");
+    auto camera_value = cJSON_GetObjectItem(root, "value");
+    auto camera_id = cJSON_GetObjectItem(root, "session_id");
+    // 会话id匹配
 
+    protocol_->SendIotContent(camera_name->valuestring, camera_type->valuestring, camera_property->valuestring, camera_value->valuestring);
+}
