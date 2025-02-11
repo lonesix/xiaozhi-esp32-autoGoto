@@ -235,6 +235,8 @@ void Application::KaijiGifStart()
 
 
 }
+
+
 void Application::Start()
 {
     auto& board = Board::GetInstance();
