@@ -18,7 +18,7 @@
 #include "background_task.h"
 
 #include "uart_comm.h"
-
+#include "adcButton.h"
 #if CONFIG_IDF_TARGET_ESP32S3
 #include "wake_word_detect.h"
 #include "audio_processor.h"
@@ -66,6 +66,8 @@ public:
     void sendCjsonToCameraSerial(const char *name, const char *type, const char *property, const char *value, const char *session_id);
     void ProcessReceivedJson(cJSON* root);
     void CameraProcessReceivedJson(cJSON* root);
+
+
 private:
     Application();
     ~Application();
@@ -79,6 +81,7 @@ private:
     UartComm* camera_uart;
     std::string camera_string;
     std::string uc_string;
+    ADCButtonNetwork* adc_button;
     Ota ota_;
     std::mutex mutex_;
     std::list<std::function<void()>> main_tasks_;

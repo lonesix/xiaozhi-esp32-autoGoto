@@ -14,8 +14,11 @@
 #include <cJSON.h>
 #include <driver/gpio.h>
 #include <arpa/inet.h>
+#include "adcButton.h"
 
-#define TAG "Application"
+// #define TAG("Application")
+const char *TAG = "Application";
+const char* ADCButtonNetwork::TAG1 = "adc_button_network";
 
 extern const char p3_err_reg_start[] asm("_binary_err_reg_p3_start");
 extern const char p3_err_reg_end[] asm("_binary_err_reg_p3_end");
@@ -42,6 +45,10 @@ Application::Application() : background_task_(4096 * 8) {
     
     camera_uart = new UartComm(CAMERA_UART_NUM, CAMERA_TX_PIN, CAMERA_RX_PIN, CAMERA_BAUD_RATE, CAMERA_BUF_SIZE);
     camera_uart->init();
+    
+
+
+
 
     ota_.SetCheckVersionUrl(CONFIG_OTA_VERSION_URL);
     ota_.SetHeader("Device-Id", SystemInfo::GetMacAddress().c_str());
@@ -302,7 +309,21 @@ void Application::Start()
             app->camera_uart->receiveCameraDataCjson();
             vTaskDelay(pdMS_TO_TICKS(10));  // 每 ms 检查一次接收的数据
     } }, "camera_uart_receive_task", 4096, this, 1, nullptr);
+    const uint16_t thresholds[] = {
+    (uint16_t)((float)0.38 / 3.3 * 4096-150), // 按键1的阈值
+    (uint16_t)((float)0.82 / 3.3 * 4096-150), // 按键2的阈值
+    (uint16_t)((float)1.18 / 3.3 * 4096-180), // 按键3的阈值
+    (uint16_t)((float)1.57 / 3.3 * 4096-220), // 按键4的阈值
+    (uint16_t)((float)1.98 / 3.3 * 4096-250), // 按键5的阈值
+    (uint16_t)((float)2.38 / 3.3 * 4096-250), // 按键6的阈值
+ 
+    // ... 可以添加更多按键的阈值
+};
 
+    size_t num_buttons = sizeof(thresholds) / sizeof(thresholds[0]);
+
+    // 创建ADCButtonNetwork对象，并自动启动任务,io4
+    adc_button = new ADCButtonNetwork("ADCButtonTask", ADC_UNIT_1, ADC_CHANNEL_3, thresholds, num_buttons);
     // xTaskCreate([](void *arg)
     // {
     //     Application* app = (Application*)arg;
