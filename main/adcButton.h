@@ -54,22 +54,22 @@ public:
 
         //-------------ADC1 Config---------------//
         adc_oneshot_chan_cfg_t config = {
-            .atten = ADC_ATTEN_DB_11,
+            .atten = ADC_ATTEN_DB_12,
             .bitwidth = ADC_BITWIDTH_12,
         };
 
         adc_oneshot_config_channel(adc1_handle, adc_channel_, &config);
 
 
-        // //-------------ADC1 Calibration Init---------------//
-        // adc1_cali_chan_handle = NULL;
+    // 初始化校准方案
+    adc1_cali_chan_handle = NULL;
+    adc_cali_curve_fitting_config_t cali_config = {
+        .unit_id = adc_unit_,
+        .atten = ADC_ATTEN_DB_12,
+        .bitwidth = ADC_BITWIDTH_12,
+    };
+    esp_err_t rett = adc_cali_create_scheme_curve_fitting(&cali_config, &adc1_cali_chan_handle);
 
-        // bool do_calibration1_chan = example_adc_calibration_init(adc_unit_, adc_channel_, ADC_ATTEN_DB_11, &adc1_cali_chan_handle);
-    
-
-        // // 初始化ADC配置
-        // adc1_config_width(ADC_WIDTH_BIT_12);
-        // adc1_config_channel_atten(adc_channel_, ADC_ATTEN_DB_11);
 
         // 创建FreeRTOS任务
         BaseType_t ret = xTaskCreate(
@@ -114,13 +114,22 @@ private:
             int adc_value;
             adc_oneshot_read(adc1_handle, adc_channel_, &adc_value);
             // ESP_LOGI(TAG1, "ADC Value: %d", adc_value);
+            // 将原始值转换为电压
+            int voltage = 0;
+            if (adc_cali_raw_to_voltage(adc1_cali_chan_handle, adc_value, &voltage) == ESP_OK) {
+                // printf("ADC Raw Value: %d\tVoltage: %dmV\n", adc_value, voltage);
+            } else {
+                ESP_LOGE(TAG1,"Failed to convert raw value to voltage\n");
+            }
+            const int Voltage_offset = 100;
 
             for (size_t i = 0; i < num_buttons_; i++) {
-                if (adc_value > thresholds_[i] &&
-                    (i == num_buttons_ - 1 || adc_value <= thresholds_[i + 1]) &&
-                    adc_value < 4090) {
+                if (voltage > (thresholds_[i]-Voltage_offset) &&
+                    (i == num_buttons_ - 1 || voltage <= (thresholds_[i + 1]-Voltage_offset)) &&
+                    voltage < 3000) {
                     ESP_LOGI(TAG1, "ADC Value: %d", adc_value);
-                    ESP_LOGI(TAG1, "thresholds_ADC Value: %d", thresholds_[i]);
+                    ESP_LOGI(TAG1, "ADC Voltage: %dmV", voltage);
+                    ESP_LOGI(TAG1, "thresholds_ADC Voltage: %dmV", thresholds_[i]-Voltage_offset);
                     ESP_LOGI(TAG1, "Button %zu Pressed", i + 1);
                     if (callbacks_[i]) {
                         callbacks_[i](); // 调用回调函数
@@ -129,7 +138,7 @@ private:
                 }
             }
 
-            vTaskDelay(pdMS_TO_TICKS(200)); // 延时以避免过于频繁的日志输出
+            vTaskDelay(pdMS_TO_TICKS(150)); // 延时以避免过于频繁的日志输出
         }
     }
 };
