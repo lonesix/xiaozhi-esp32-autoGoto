@@ -309,6 +309,8 @@ void Application::Start()
             app->camera_uart->receiveCameraDataCjson();
             vTaskDelay(pdMS_TO_TICKS(10));  // 每 ms 检查一次接收的数据
     } }, "camera_uart_receive_task", 4096, this, 1, nullptr);
+
+    // ADC按键
     const uint16_t thresholds[] = {
     (uint16_t)((float)0.38 / 3.3 * 4096-150), // 按键1的阈值
     (uint16_t)((float)0.82 / 3.3 * 4096-150), // 按键2的阈值
@@ -316,14 +318,43 @@ void Application::Start()
     (uint16_t)((float)1.57 / 3.3 * 4096-220), // 按键4的阈值
     (uint16_t)((float)1.98 / 3.3 * 4096-250), // 按键5的阈值
     (uint16_t)((float)2.38 / 3.3 * 4096-250), // 按键6的阈值
- 
-    // ... 可以添加更多按键的阈值
 };
 
     size_t num_buttons = sizeof(thresholds) / sizeof(thresholds[0]);
 
     // 创建ADCButtonNetwork对象，并自动启动任务,io4
     adc_button = new ADCButtonNetwork("ADCButtonTask", ADC_UNIT_1, ADC_CHANNEL_3, thresholds, num_buttons);
+            // 注册回调函数
+    adc_button->registerCallback(0, []() { 
+        ESP_LOGI(ADCButtonNetwork::TAG1, "Button 1 Callback Executed");
+        // 在这里添加按钮1被按下时的处理逻辑
+        
+        });
+    adc_button->registerCallback(1, []() {
+        ESP_LOGI(ADCButtonNetwork::TAG1, "Button 2 Callback Executed");
+        // 在这里添加按钮2被按下时的处理逻辑
+    }
+    );
+    adc_button->registerCallback(2, []() {
+        ESP_LOGI(ADCButtonNetwork::TAG1, "Button 3 Callback Executed");
+        // 在这里添加按钮3被按下时的处理逻辑
+    }
+    );
+    adc_button->registerCallback(3, []() {
+        ESP_LOGI(ADCButtonNetwork::TAG1, "Button 4 Callback Executed");
+        // 在这里添加按钮4被按下时的处理逻辑
+    }
+    );
+    adc_button->registerCallback(4, []() {
+        ESP_LOGI(ADCButtonNetwork::TAG1, "Button 5 Callback Executed");
+        // 在这里添加按钮5被按下时的处理逻辑
+    }
+    );
+    adc_button->registerCallback(5, []() {
+        ESP_LOGI(ADCButtonNetwork::TAG1, "Button 6 Callback Executed");
+        // 在这里添加按钮6被按下时的处理逻辑
+    }
+    );
     // xTaskCreate([](void *arg)
     // {
     //     Application* app = (Application*)arg;

@@ -17,41 +17,15 @@ public:
     adc_oneshot_unit_handle_t adc1_handle; // 单次ADC转换句柄
     adc_cali_handle_t adc1_cali_chan_handle;
         // 注册回调函数
-    void registerCallback(size_t button_index, void (*callback)()) {
+    void registerCallback(size_t button_index,std::function<void()> callback) {
         if (button_index < num_buttons_) {
             callbacks_[button_index] = callback;
         } else {
             ESP_LOGE(TAG1, "Button index out of range");
         }
     }
-    // 示例回调函数
-    static void button1Callback() {
-        ESP_LOGI(ADCButtonNetwork::TAG1, "Button 1 Callback Executed");
-        // 在这里添加按钮1被按下时的处理逻辑
-    }
 
-    static void button3Callback() {
-        ESP_LOGI(ADCButtonNetwork::TAG1, "Button 3 Callback Executed");
-        // 在这里添加按钮3被按下时的处理逻辑
-    }
-    static void button4Callback() {
-        ESP_LOGI(ADCButtonNetwork::TAG1, "Button 4 Callback Executed");
-        // 在这里添加按钮4被按下时的处理逻辑
 
-    }
-    static void button5Callback() {
-        ESP_LOGI(ADCButtonNetwork::TAG1, "Button 5 Callback Executed");
-        // 在这里添加按钮5被按下时的处理逻辑
-    }
-    static void button6Callback() {
-        ESP_LOGI(ADCButtonNetwork::TAG1, "Button 6 Callback Executed");
-        // 在这里添加按钮6被按下时的处理逻辑
-    }
-
-    static void button2Callback() {
-        ESP_LOGI(ADCButtonNetwork::TAG1, "Button 2 Callback Executed");
-        // 在这里添加按钮2被按下时的处理逻辑
-    }
 
     ADCButtonNetwork(const char* task_name, adc_unit_t unit, adc_channel_t channel, const uint16_t* thresholds, size_t num_buttons, uint32_t stack_depth = 2048*2, UBaseType_t priority = tskIDLE_PRIORITY + 1)
         : task_handle_(nullptr), adc_unit_(unit), adc_channel_(channel), num_buttons_(num_buttons) {
@@ -92,13 +66,7 @@ public:
 
         // bool do_calibration1_chan = example_adc_calibration_init(adc_unit_, adc_channel_, ADC_ATTEN_DB_11, &adc1_cali_chan_handle);
     
-        // 注册回调函数
-        this->registerCallback(0, button1Callback);
-        this->registerCallback(1, button2Callback);
-        this->registerCallback(2, button3Callback);
-        this->registerCallback(3, button4Callback);
-        this->registerCallback(4, button5Callback);
-        this->registerCallback(5, button6Callback);
+
         // // 初始化ADC配置
         // adc1_config_width(ADC_WIDTH_BIT_12);
         // adc1_config_channel_atten(adc_channel_, ADC_ATTEN_DB_11);
@@ -138,7 +106,7 @@ private:
     adc_unit_t adc_unit_;
     adc_channel_t adc_channel_;
     std::vector<uint16_t> thresholds_; // 阈值数组
-    void (*callbacks_[6])(void); // 回调函数数组
+    std::function<void()> callbacks_[6]; // 回调函数数组
     size_t num_buttons_; // 按钮数量
 
     void run() {
