@@ -48,7 +48,7 @@ void WifiBoard::StartNetwork() {
         builtin_led->SetBlue();
         builtin_led->Blink(1000, 500);
         auto& wifi_ap = WifiConfigurationAp::GetInstance();
-        wifi_ap.SetSsidPrefix("Xiaozhi");
+        wifi_ap.SetSsidPrefix("Qianji");
         wifi_ap.Start();
         
         // 播报配置 WiFi 的提示

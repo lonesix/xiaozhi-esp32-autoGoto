@@ -116,16 +116,16 @@
 
 
 
-
+<!-- 
 # 小智 AI 聊天机器人
 
 这是虾哥的第一个硬件作品。
 
 [ESP32+SenseVoice+Qwen72B打造你的AI聊天伴侣！【bilibili】](https://www.bilibili.com/video/BV11msTenEH3/?share_source=copy_web&vd_source=ee1aafe19d6e60cf22e60a93881faeba)
 
-[手工打造你的 AI 女友，新手入门教程【bilibili】](https://www.bilibili.com/video/BV1XnmFYLEJN/)
+[手工打造你的 AI 女友，新手入门教程【bilibili】](https://www.bilibili.com/video/BV1XnmFYLEJN/) -->
 
-## 项目目的
+<!-- ## 项目目的
 
 本项目基于乐鑫的 ESP-IDF 进行开发。
 
@@ -133,9 +133,9 @@
 
 欢迎所有人参与到项目的开发和改进中来。如果你有任何想法或建议，请随时提出 issue 或加入群聊。
 
-学习交流 QQ 群：946599635
+学习交流 QQ 群：946599635 -->
 
-## 已实现功能
+<!-- ## 已实现功能
 
 - Wi-Fi 配网
 - 支持 BOOT 键唤醒和打断
@@ -148,9 +148,9 @@
 - Qwen2.5 72B 或 豆包 API
 - 支持每轮对话后自我总结，生成记忆体
 - 扩展液晶显示屏，显示信号强弱
-- 支持 ML307 Cat.1 4G 模块
+- 支持 ML307 Cat.1 4G 模块 -->
 
-## 硬件部分
+<!-- ## 硬件部分
 
 为方便协作，目前所有硬件资料都放在飞书文档中：
 
@@ -158,15 +158,15 @@
 
 面包板接线图如下：
 
-![面包板接线图](docs/wiring2.jpg)
+![面包板接线图](docs/wiring2.jpg) -->
 
-## 固件部分
+<!-- ## 固件部分 -->
 
-### 免开发环境烧录
+<!-- ### 免开发环境烧录
 
 新手第一次操作建议先不要搭建开发环境，直接使用免开发环境烧录的固件。固件使用的是作者友情提供的测试服，目前开放免费使用，请勿用于商业用途。
 
-[Flash烧录固件（无IDF开发环境）](https://ccnphfhqs21z.feishu.cn/wiki/Zpz4wXBtdimBrLk25WdcXzxcnNS) 
+[Flash烧录固件（无IDF开发环境）](https://ccnphfhqs21z.feishu.cn/wiki/Zpz4wXBtdimBrLk25WdcXzxcnNS)  -->
 
 
 ### 开发环境
@@ -176,9 +176,9 @@
 - Ubuntu 比 Windows 更好，编译速度快，也免去驱动问题的困扰
 
 
-## AI 角色配置
+<!-- ## AI 角色配置
 
 如果你已经拥有一个小智 AI 聊天机器人，可以参考 [后台操作视频教程](https://www.bilibili.com/video/BV1jUCUY2EKM/)
 
-详细的使用说明以及测试服的注意事项，请参考 [小智测试服的帮助说明](https://xiaozhi.me/help)。
+详细的使用说明以及测试服的注意事项，请参考 [小智测试服的帮助说明](https://xiaozhi.me/help)。 -->
 
