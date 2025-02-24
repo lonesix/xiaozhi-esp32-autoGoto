@@ -12,8 +12,8 @@ void ui_main_screen_init(void)
 
     ui_container1 = lv_obj_create(ui_main);
     lv_obj_remove_style_all(ui_container1);
-    lv_obj_set_width(ui_container1, 240);
-    lv_obj_set_height(ui_container1, 320);
+    lv_obj_set_width(ui_container1, 320);
+    lv_obj_set_height(ui_container1, 240);
     lv_obj_set_align(ui_container1, LV_ALIGN_CENTER);
     lv_obj_set_flex_flow(ui_container1, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_flex_align(ui_container1, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
@@ -22,7 +22,7 @@ void ui_main_screen_init(void)
 
     ui_status = lv_obj_create(ui_container1);
     lv_obj_remove_style_all(ui_status);
-    lv_obj_set_width(ui_status, 240);
+    lv_obj_set_width(ui_status, 320);
     lv_obj_set_height(ui_status, 36);
     lv_obj_clear_flag(ui_status, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE);      /// Flags
     lv_obj_set_style_radius(ui_status, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -47,9 +47,9 @@ void ui_main_screen_init(void)
     lv_obj_clear_flag(ui_changeBar, LV_OBJ_FLAG_PRESS_LOCK | LV_OBJ_FLAG_CLICK_FOCUSABLE | LV_OBJ_FLAG_GESTURE_BUBBLE |
                       LV_OBJ_FLAG_SNAPPABLE);     /// Flags
 
-    lv_obj_set_style_bg_color(ui_changeBar, lv_color_hex(0x02F705), LV_PART_INDICATOR | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_color(ui_changeBar, lv_color_hex(0xF7024A), LV_PART_INDICATOR | LV_STATE_DEFAULT);
     lv_obj_set_style_bg_opa(ui_changeBar, 255, LV_PART_INDICATOR | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_grad_color(ui_changeBar, lv_color_hex(0x02F705), LV_PART_INDICATOR | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_grad_color(ui_changeBar, lv_color_hex(0xF7021E), LV_PART_INDICATOR | LV_STATE_DEFAULT);
     lv_obj_set_style_bg_grad_dir(ui_changeBar, LV_GRAD_DIR_HOR, LV_PART_INDICATOR | LV_STATE_DEFAULT);
 
     ui_notificationLabel = lv_label_create(ui_status);
@@ -85,8 +85,8 @@ void ui_main_screen_init(void)
 
     ui_Content = lv_obj_create(ui_container1);
     lv_obj_remove_style_all(ui_Content);
-    lv_obj_set_width(ui_Content, 240);
-    lv_obj_set_height(ui_Content, 284);
+    lv_obj_set_width(ui_Content, 320);
+    lv_obj_set_height(ui_Content, 204);
     lv_obj_set_x(ui_Content, 0);
     lv_obj_set_y(ui_Content, 36);
     lv_obj_clear_flag(ui_Content, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_PRESS_LOCK | LV_OBJ_FLAG_CLICK_FOCUSABLE |
@@ -95,10 +95,10 @@ void ui_main_screen_init(void)
     lv_obj_set_style_radius(ui_Content, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_AITextArea = lv_textarea_create(ui_Content);
-    lv_obj_set_width(ui_AITextArea, 200);
-    lv_obj_set_height(ui_AITextArea, 100);
+    lv_obj_set_width(ui_AITextArea, 280);
+    lv_obj_set_height(ui_AITextArea, 75);
     lv_obj_set_x(ui_AITextArea, 10);
-    lv_obj_set_y(ui_AITextArea, 25);
+    lv_obj_set_y(ui_AITextArea, 10);
     lv_textarea_set_max_length(ui_AITextArea, 1000);
     lv_textarea_set_placeholder_text(ui_AITextArea, "AI...");
     lv_obj_clear_flag(ui_AITextArea, LV_OBJ_FLAG_PRESS_LOCK | LV_OBJ_FLAG_CLICK_FOCUSABLE | LV_OBJ_FLAG_GESTURE_BUBBLE |
@@ -107,10 +107,10 @@ void ui_main_screen_init(void)
 
 
     ui_userTextArea = lv_textarea_create(ui_Content);
-    lv_obj_set_width(ui_userTextArea, 200);
-    lv_obj_set_height(ui_userTextArea, 100);
+    lv_obj_set_width(ui_userTextArea, 280);
+    lv_obj_set_height(ui_userTextArea, 75);
     lv_obj_set_x(ui_userTextArea, 30);
-    lv_obj_set_y(ui_userTextArea, 65);
+    lv_obj_set_y(ui_userTextArea, 45);
     lv_obj_set_align(ui_userTextArea, LV_ALIGN_LEFT_MID);
     lv_textarea_set_max_length(ui_userTextArea, 1000);
     lv_textarea_set_placeholder_text(ui_userTextArea, "user...");

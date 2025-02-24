@@ -200,7 +200,8 @@ St7789Display::St7789Display(esp_lcd_touch_handle_t tp,esp_lcd_panel_io_handle_t
     disp_drv.drv_update_cb = st7789_lvgl_port_update_callback;
     disp_drv.draw_buf = &disp_buf;
     disp_drv.user_data = panel_;
-    // disp_drv.rotated = LV_DISP_ROT_180;
+    disp_drv.sw_rotate = 1;
+    disp_drv.rotated = LV_DISP_ROT_270;
     lv_disp_drv_register(&disp_drv);
 
     	/*触摸屏输入接口配置*/
@@ -484,8 +485,8 @@ void next_frame_task_cb(lv_event_t *event)
         lv_label_set_text(ui_netLabel, wifiIcon[3]);
         lv_label_set_text(ui_volLabel2, volumnIcon[1]);
         /*设置字体，网络和音量标志已内置*/
-        lv_obj_set_style_text_font(ui_AITextArea, &font_puhui_14_1, LV_PART_MAIN | LV_STATE_DEFAULT);
-        lv_obj_set_style_text_font(ui_userTextArea, &font_puhui_14_1, LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_obj_set_style_text_font(ui_AITextArea, &font_alipuhui20, LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_obj_set_style_text_font(ui_userTextArea, &font_alipuhui20, LV_PART_MAIN | LV_STATE_DEFAULT);
         lv_obj_set_style_text_font(ui_notificationLabel, &font_puhui_14_1, LV_PART_MAIN | LV_STATE_DEFAULT);
         lv_obj_set_style_text_font(ui_QRcodeLabel, &font_puhui_14_1, LV_PART_MAIN | LV_STATE_DEFAULT);
         *flag = true;
@@ -527,8 +528,8 @@ void St7789Display::SetupUI()
         lv_label_set_text(ui_netLabel, wifiIcon[3]);
         lv_label_set_text(ui_volLabel2, volumnIcon[1]);
         /*设置字体，网络和音量标志已内置*/
-        lv_obj_set_style_text_font(ui_AITextArea, &font_puhui_14_1, LV_PART_MAIN | LV_STATE_DEFAULT);
-        lv_obj_set_style_text_font(ui_userTextArea, &font_puhui_14_1, LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_obj_set_style_text_font(ui_AITextArea, &font_alipuhui20, LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_obj_set_style_text_font(ui_userTextArea, &font_alipuhui20, LV_PART_MAIN | LV_STATE_DEFAULT);
         lv_obj_set_style_text_font(ui_notificationLabel, &font_puhui_14_1, LV_PART_MAIN | LV_STATE_DEFAULT);
         lv_obj_set_style_text_font(ui_QRcodeLabel, &font_puhui_14_1, LV_PART_MAIN | LV_STATE_DEFAULT);
     #endif

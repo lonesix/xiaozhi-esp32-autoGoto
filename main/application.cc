@@ -344,7 +344,9 @@ void Application::Start()
     adc_button->registerCallback(0, []() { 
         ESP_LOGI(ADCButtonNetwork::TAG1, "Button 1 Callback Executed");
         // 在这里添加按钮1被按下时的处理逻辑
-        
+        Application::GetInstance().StartListening();
+        vTaskDelay(pdMS_TO_TICKS(120));
+        Application::GetInstance().StopListening();
         });
     adc_button->registerCallback(1, []() {
         ESP_LOGI(ADCButtonNetwork::TAG1, "Button 2 Callback Executed");
@@ -749,7 +751,7 @@ void Application::SetChatState(ChatState state) {
         case kChatStateIdle:
             builtin_led->TurnOff();
             display->SetStatus("千机赋能");
-            display->SetChatMessage("user", "请问有什么可以帮您吗？");
+            display->SetChatMessage("user", "请问有什么可以帮您吗?");
             // display->SetEmotion("neutral");
             Schedule([this](){ /*this->sendCjsonToSerial("status", "Idle");*/ });
 #ifdef CONFIG_IDF_TARGET_ESP32S3
