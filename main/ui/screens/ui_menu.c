@@ -50,7 +50,7 @@ void ui_menu_screen_init(void)
     lv_obj_set_x(ui_wakeLabel, -2);
     lv_obj_set_y(ui_wakeLabel, -56);
     lv_obj_set_align(ui_wakeLabel, LV_ALIGN_CENTER);
-    lv_label_set_text(ui_wakeLabel, "wakeup");
+    lv_label_set_text(ui_wakeLabel, "send");
     lv_obj_clear_flag(ui_wakeLabel, LV_OBJ_FLAG_PRESS_LOCK | LV_OBJ_FLAG_CLICK_FOCUSABLE | LV_OBJ_FLAG_GESTURE_BUBBLE |
                       LV_OBJ_FLAG_SNAPPABLE);     /// Flags
 

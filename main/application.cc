@@ -888,6 +888,37 @@ extern "C" void ChangeVolumn_cc(int volum)
 	board.GetAudioCodec()->SetOutputVolume(volum);
 	// (int)lv_slider_get_value(ui_volumn);
 }
+extern "C" void send_data_cc()
+{
+        // 创建根节点
+    cJSON *root = cJSON_CreateObject();
+
+    // 添加session_id节点
+    cJSON_AddStringToObject(root, "session_id", "4a429e61");
+
+    // 添加name节点
+    cJSON_AddStringToObject(root, "name", "SG90");
+
+    // 添加type节点
+    cJSON_AddStringToObject(root, "type", "command");
+
+    // 添加property节点
+    cJSON_AddStringToObject(root, "property", "angle");
+
+    // 添加value节点
+    cJSON_AddStringToObject(root, "value", "15");
+        // 生成JSON字符串
+    char *json_str = cJSON_Print(root);
+
+    // 打印JSON字符串
+    printf("%s\n", json_str);
+    Application::GetInstance().ProcessReceivedJson(root);
+    cJSON_Delete(root);  // 在任务执行完后删除 JSON 对象
+    free(json_str);
+    
+	// (int)lv_slider_get_value(ui_volumn);
+}
+
 //协对主解析
 void Application::ProcessReceivedJson(cJSON *root)
 {   

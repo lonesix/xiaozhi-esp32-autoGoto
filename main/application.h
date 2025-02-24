@@ -27,7 +27,7 @@
 #define SCHEDULE_EVENT (1 << 0)
 #define AUDIO_INPUT_READY_EVENT (1 << 1)
 #define AUDIO_OUTPUT_READY_EVENT (1 << 2)
-
+#define DEVICE_ID "12874585-797d-4a96-af8a-b09d977c20e4"
 enum ChatState {
     kChatStateUnknown,
     kChatStateIdle,

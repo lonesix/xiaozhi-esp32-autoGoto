@@ -19,6 +19,7 @@ void ChangeVolumn(lv_event_t * e)
 void ClickeWake(lv_event_t * e)
 {
 	// Your code here
+	send_data_cc();
 }
 
 void ClickeDelNetSet(lv_event_t * e)
