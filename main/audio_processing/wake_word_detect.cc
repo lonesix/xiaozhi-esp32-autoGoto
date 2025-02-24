@@ -150,9 +150,19 @@ void WakeWordDetect::AudioDetectionTask() {
             }
         }
 
-        if (res->wakeup_state == WAKENET_DETECTED) {
-            StopDetection();
-            last_detected_wake_word_ = wake_words_[res->wake_word_index - 1];
+        if (res->wakeup_state == WAKENET_DETECTED || this->buttonFlag) {
+            if (this->buttonFlag)
+            {
+                this->buttonFlag = false;
+                StopDetection();
+                last_detected_wake_word_ = "你好小智";
+            }else{
+                this->buttonFlag = false;
+                StopDetection();
+                last_detected_wake_word_ = wake_words_[res->wake_word_index - 1];
+                ESP_LOGE(TAG, "Wake word detected: %s", last_detected_wake_word_.c_str());
+            }
+            
 
             if (wake_word_detected_callback_) {
                 wake_word_detected_callback_(last_detected_wake_word_);

@@ -19,6 +19,7 @@
 
 #include "uart_comm.h"
 #include "adcButton.h"
+#include "button.h"
 #if CONFIG_IDF_TARGET_ESP32S3
 #include "wake_word_detect.h"
 #include "audio_processor.h"
@@ -27,7 +28,8 @@
 #define SCHEDULE_EVENT (1 << 0)
 #define AUDIO_INPUT_READY_EVENT (1 << 1)
 #define AUDIO_OUTPUT_READY_EVENT (1 << 2)
-#define DEVICE_ID "12874585-797d-4a96-af8a-b09d977c20e4"
+#define EXTERNAL_VOICE_WAKE_UP_GPIO GPIO_NUM_5
+#define DEVICE_ID "abe64b93-21fd-406b-a777-abd356769bc7"
 enum ChatState {
     kChatStateUnknown,
     kChatStateIdle,
@@ -82,6 +84,7 @@ private:
     std::string camera_string;
     std::string uc_string;
     ADCButtonNetwork* adc_button;
+    Button* External_voice_wake_up;
     Ota ota_;
     std::mutex mutex_;
     std::list<std::function<void()>> main_tasks_;

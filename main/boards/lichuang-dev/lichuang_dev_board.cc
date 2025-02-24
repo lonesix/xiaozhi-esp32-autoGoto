@@ -39,7 +39,6 @@ private:
     i2c_master_bus_handle_t i2c_bus_;
     i2c_master_dev_handle_t pca9557_handle_;
     Button boot_button_;
-    Button External_voice_wake_up;
     St7789Display* display_;
     Pca9557* pca9557_;
     esp_lcd_touch_handle_t tp;   // 触摸屏句柄
@@ -88,21 +87,7 @@ private:
             Application::GetInstance().StopListening();
         });
     }
-    void InitializeVoiceButtons() {
-        // boot_button_.OnClick([this]() {
-        //     auto& app = Application::GetInstance();
-        //     if (app.GetChatState() == kChatStateUnknown && !WifiStation::GetInstance().IsConnected()) {
-        //         ResetWifiConfiguration();
-        //     }
-        // });
 
-        External_voice_wake_up.OnPressDown([this]() {
-            Application::GetInstance().StartListening();
-        });
-        // boot_button_.OnPressUp([this]() {
-        //     Application::GetInstance().StopListening();
-        // });
-    }
     void InitializeSt7789Display() {
         esp_lcd_panel_io_handle_t panel_io = nullptr;
         esp_lcd_panel_handle_t panel = nullptr;
@@ -170,12 +155,12 @@ private:
     }
 
 public:
-    LichuangDevBoard() : boot_button_(BOOT_BUTTON_GPIO),External_voice_wake_up(EXTERNAL_VOICE_WAKE_UP_GPIO) {
+    LichuangDevBoard() : boot_button_(BOOT_BUTTON_GPIO) {
         InitializeI2c();
         InitializeSpi();
         InitializeSt7789Display();
         InitializeButtons();
-        InitializeVoiceButtons();
+        
         InitializeIot();
     }
 

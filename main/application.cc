@@ -15,7 +15,7 @@
 #include <driver/gpio.h>
 #include <arpa/inet.h>
 #include "adcButton.h"
-
+#include "button.h"
 // #define TAG("Application")
 const char *TAG = "Application";
 const char* ADCButtonNetwork::TAG1 = "adc_button_network";
@@ -165,7 +165,9 @@ void Application::StartListening() {
             ESP_LOGE(TAG, "Protocol not initialized");
             return;
         }
-        
+        if(wake_word_detect_.buttonFlag ){
+            return;
+        }
         keep_listening_ = false;
         if (chat_state_ == kChatStateIdle) {
             if (!protocol_->IsAudioChannelOpened()) {
@@ -286,11 +288,11 @@ void Application::Start()
     board.StartNetwork();
 
     // Check for new firmware version or get the MQTT broker address
-    xTaskCreate([](void* arg) {
-        Application* app = (Application*)arg;
-        app->CheckNewVersion();
-        vTaskDelete(NULL);
-    }, "check_new_version", 4096 * 2, this, 1, nullptr);
+    // xTaskCreate([](void* arg) {
+    //     Application* app = (Application*)arg;
+    //     app->CheckNewVersion();
+    //     vTaskDelete(NULL);
+    // }, "check_new_version", 4096 * 2, this, 1, nullptr);
 
     // 启动串口接收任务
     xTaskCreate([](void *arg)
@@ -309,7 +311,15 @@ void Application::Start()
             app->camera_uart->receiveCameraDataCjson();
             vTaskDelay(pdMS_TO_TICKS(10));  // 每 ms 检查一次接收的数据
     } }, "camera_uart_receive_task", 4096, this, 1, nullptr);
+    // 自定义语音唤醒
+    External_voice_wake_up = new Button(EXTERNAL_VOICE_WAKE_UP_GPIO, 1);
 
+    External_voice_wake_up->OnPressDown([this]() {
+    ESP_LOGI(TAG, "VoiceButton released");
+    wake_word_detect_.buttonFlag = true;
+    Application::GetInstance().StartListening();
+    
+});
     // ADC按键
     const uint16_t thresholds[] = {
     // (uint16_t)((float)0.38 / 3.3 * 4096-150), // 按键1的阈值

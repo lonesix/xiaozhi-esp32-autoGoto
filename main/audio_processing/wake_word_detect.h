@@ -31,7 +31,7 @@ public:
     void EncodeWakeWordData();
     bool GetWakeWordOpus(std::vector<uint8_t>& opus);
     const std::string& GetLastDetectedWakeWord() const { return last_detected_wake_word_; }
-
+    bool buttonFlag = false;
 private:
     esp_afe_sr_data_t* afe_detection_data_ = nullptr;
     char* wakenet_model_ = NULL;
@@ -52,6 +52,7 @@ private:
     std::list<std::vector<uint8_t>> wake_word_opus_;
     std::mutex wake_word_mutex_;
     std::condition_variable wake_word_cv_;
+    
 
     void StoreWakeWordData(uint16_t* data, size_t size);
     void AudioDetectionTask();
