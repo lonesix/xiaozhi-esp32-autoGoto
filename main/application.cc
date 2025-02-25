@@ -282,7 +282,7 @@ void Application::Start()
         Application* app = (Application*)arg;
         app->MainLoop();
         vTaskDelete(NULL);
-    }, "main_loop", 4096 * 2, this, 2, nullptr);
+    }, "main_loop", 5120 * 2, this, 2, nullptr);
 
     /* Wait for the network to be ready */
     board.StartNetwork();
@@ -531,39 +531,45 @@ void Application::Start()
                     // this->sendCjsonToSerial("stt",uc_string.c_str());
                 });
             }
-        } else if (strcmp(type->valuestring, "llm") == 0) {
-            auto emotion = cJSON_GetObjectItem(root, "emotion");
-            if (emotion != NULL) {
-                display->SetEmotion(emotion->valuestring);
-                uc_string = emotion->valuestring;
-                Schedule([this]() {
-                    // this->sendCjsonToSerial("emotion",uc_string.c_str());
-                });
-            }
-        }else if(strcmp(type->valuestring, "command") == 0){
+        } 
+        // else if (strcmp(type->valuestring, "llm") == 0) {
+        //     auto emotion = cJSON_GetObjectItem(root, "emotion");
+        //     if (emotion != NULL) {
+        //         display->SetEmotion(emotion->valuestring);
+        //         uc_string = emotion->valuestring;
+        //         Schedule([this]() {
+        //             // this->sendCjsonToSerial("emotion",uc_string.c_str());
+        //         });
+        //     }
+        // }
+        else if(strcmp(type->valuestring, "command") == 0){
             auto Json_name = cJSON_GetObjectItem(root, "name");
             if ((Json_name != NULL) && (strcmp(Json_name->valuestring, "LLM") == 0)) {
-                auto Json_value = cJSON_GetObjectItem(root, "value");
-                if (Json_value != NULL) {
-                    if (strcmp(Json_value->valuestring, "byebye") == 0 || strcmp(Json_value->valuestring, "leave") == 0) {
-                        Schedule([this](){
-                            keep_listening_ = false;
-                            IsDisconnect_ = true;
+                auto Json_property = cJSON_GetObjectItem(root, "property");
+                if ((Json_property != NULL) && (strcmp(Json_property->valuestring, "emotion") == 0))
+                {
+                    auto emotion = cJSON_GetObjectItem(root, "value");
+                    if (emotion != NULL) {
+                        display->SetEmotion(emotion->valuestring);
+                        uc_string = emotion->valuestring;
+                        // Schedule([this]() {
+                        //     // this->sendCjsonToSerial("emotion",uc_string.c_str());
+                        // });
+                    }
+                }else if ((Json_property != NULL) && (strcmp(Json_property->valuestring, "action") == 0)){
+                    auto Json_value = cJSON_GetObjectItem(root, "value");
+                    if (Json_value != NULL) {
+                        if (strcmp(Json_value->valuestring, "byebye") == 0 || strcmp(Json_value->valuestring, "leave") == 0) {
+                            Schedule([this](){
+                                keep_listening_ = false;
+                                IsDisconnect_ = true;
+                                
+                            });
                             
-                        });
-                        
+                        }
                     }
                 }
-                // auto Json_property = cJSON_GetObjectItem(root, "property");
-                // if ((Json_property != NULL) && (strcmp(Json_property->valuestring, "action") == 0)) {
-
-                //     }
-                // }
-
-
-
             }
-
 
 
 
@@ -787,7 +793,7 @@ void Application::SetChatState(ChatState state) {
             builtin_led->TurnOff();
             display->SetStatus("千机赋能");
             display->SetChatMessage("user", "请问有什么可以帮您吗?");
-            // display->SetEmotion("neutral");
+            display->SetEmotion("neutral");
             Schedule([this](){ /*this->sendCjsonToSerial("status", "Idle");*/ });
 #ifdef CONFIG_IDF_TARGET_ESP32S3
             audio_processor_.Stop();

@@ -12,11 +12,11 @@ static const char* TAG ="St7789Display";
 #define ST7789_LVGL_TICK_PERIOD_MS 2
 #define ST7789_LVGL_TASK_MAX_DELAY_MS 20
 #define ST7789_LVGL_TASK_MIN_DELAY_MS 1
-#define ST7789_LVGL_TASK_STACK_SIZE (7 * 1024)
+#define ST7789_LVGL_TASK_STACK_SIZE (9 * 1024)
 #define ST7789_LVGL_TASK_PRIORITY 10
 
 LV_FONT_DECLARE(font_puhui_14_1);
-LV_FONT_DECLARE(font_emoji_32);
+LV_FONT_DECLARE(font_awesome_30_4);
 // LV_FONT_DECLARE(font_awesome_14_1);
 LV_FONT_DECLARE(font_puhui_16_4);
 
@@ -361,29 +361,43 @@ void St7789Display::SetEmotion(const std::string &emotion)
         const char* icon;
         const char* text;
     };
-
+/*
+#表情列表
+"开心": "<|emotion:happy|>",,
+"生气": "<|emotion:angry|>",,
+"惊讶": "<|emotion:surprise|>",
+"厌恶": "<|emotion:disgust|>",1222
+"害怕": "<|emotion:fear|>",12222
+"伤心": "<|emotion:sad|>",
+"害羞": "<|emotion:shy|>",1222
+"尴尬": "<|emotion:embarrassed|>",
+"紧张": "<|emotion:anxious|>",1222
+"懊恼": "<|emotion:frustrated|>",1222
+"兴奋": "<|emotion:excited|>",
+"好奇": "<|emotion:curious|>"
+*/
     static const std::vector<Emotion> emotions = {
-        {"😶", "neutral"},
-        {"🙂", "happy"},
-        {"😆", "laughing"},
-        {"😂", "funny"},
-        {"😔", "sad"},
-        {"😠", "angry"},
-        {"😭", "crying"},
-        {"😍", "loving"},
-        {"😳", "embarrassed"},
-        {"😯", "surprised"},
-        {"😱", "shocked"},
-        {"🤔", "thinking"},
-        {"😉", "winking"},
-        {"😎", "cool"},
-        {"😌", "relaxed"},
-        {"🤤", "delicious"},
-        {"😘", "kissy"},
-        {"😏", "confident"},
-        {"😴", "sleepy"},
-        {"😜", "silly"},
-        {"🙄", "confused"}
+        {FONT_AWESOME_EMOJI_NEUTRAL, "neutral"},
+        {FONT_AWESOME_EMOJI_NEUTRAL, "disgust"},
+        {FONT_AWESOME_EMOJI_HAPPY, "happy"},
+        {FONT_AWESOME_EMOJI_LAUGHING, "excited"},
+        {FONT_AWESOME_EMOJI_FUNNY, "funny"},
+        {FONT_AWESOME_EMOJI_SAD, "sad"},
+        {FONT_AWESOME_EMOJI_ANGRY, "angry"},
+        {FONT_AWESOME_EMOJI_LOVING, "shy"},
+        {FONT_AWESOME_EMOJI_EMBARRASSED, "embarrassed"},
+        {FONT_AWESOME_EMOJI_SURPRISED, "surprise"},
+        {FONT_AWESOME_EMOJI_SHOCKED, "fear"},
+        {FONT_AWESOME_EMOJI_THINKING, "curious"},
+        {FONT_AWESOME_EMOJI_WINKING, "winking"},
+        {FONT_AWESOME_EMOJI_COOL, "cool"},
+        {FONT_AWESOME_EMOJI_RELAXED, "relaxed"},
+        {FONT_AWESOME_EMOJI_DELICIOUS, "delicious"},
+        {FONT_AWESOME_EMOJI_KISSY, "kissy"},
+        {FONT_AWESOME_EMOJI_CONFIDENT, "confident"},
+        {FONT_AWESOME_EMOJI_SLEEPY, "frustrated"},
+        {FONT_AWESOME_EMOJI_SILLY, "silly"},
+        {FONT_AWESOME_EMOJI_CONFUSED, "confused"}
     };
     
     // 查找匹配的表情
@@ -391,6 +405,7 @@ void St7789Display::SetEmotion(const std::string &emotion)
         [&emotion](const Emotion& e) { return e.text == emotion; });
 
     DisplayLockGuard lock(this);
+    // ESP_LOGI("St7789Display", "12312");
     if (ui_emotionlabel == nullptr) {
         return;
     }
@@ -399,8 +414,10 @@ void St7789Display::SetEmotion(const std::string &emotion)
     // lv_obj_set_style_text_font(ui_emotionlabel, fonts_.emoji_font, 0);
     if (it != emotions.end()) {
         lv_label_set_text(ui_emotionlabel, it->icon);
+        // ESP_LOGI("St7789Display", "1");
     } else {
-        lv_label_set_text(ui_emotionlabel, "😶");
+        lv_label_set_text(ui_emotionlabel, FONT_AWESOME_EMOJI_NEUTRAL);
+        // ESP_LOGI("St7789Display", "2");
     }
 }
 void St7789Display::SetChatMessage(const std::string &role, const std::string &content)
@@ -529,13 +546,14 @@ void next_frame_task_cb(lv_event_t *event)
         /*unicode设置网络标志特殊字体测试*/
         lv_label_set_text(ui_netLabel, wifiIcon[3]);
         lv_label_set_text(ui_volLabel2, volumnIcon[1]);
-        lv_label_set_text(ui_emotionlabel, "😶");
+        lv_label_set_text(ui_emotionlabel, FONT_AWESOME_AI_CHIP);
+        lv_bar_set_value(ui_changeBar, 100, LV_ANIM_OFF);
         /*设置字体，网络和音量标志已内置*/
         lv_obj_set_style_text_font(ui_AITextArea, &font_puhui_16_4, LV_PART_MAIN | LV_STATE_DEFAULT);
         lv_obj_set_style_text_font(ui_userTextArea, &font_puhui_16_4, LV_PART_MAIN | LV_STATE_DEFAULT);
         lv_obj_set_style_text_font(ui_notificationLabel, &font_puhui_14_1, LV_PART_MAIN | LV_STATE_DEFAULT);
         lv_obj_set_style_text_font(ui_QRcodeLabel, &font_puhui_14_1, LV_PART_MAIN | LV_STATE_DEFAULT);
-        lv_obj_set_style_text_font(ui_emotionlabel, &font_emoji_32, LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_obj_set_style_text_font(ui_emotionlabel, &font_awesome_30_4, LV_PART_MAIN | LV_STATE_DEFAULT);
         *flag = true;
         break;
     }
@@ -574,13 +592,14 @@ void St7789Display::SetupUI()
         /*unicode设置网络标志特殊字体测试*/
         lv_label_set_text(ui_netLabel, wifiIcon[3]);
         lv_label_set_text(ui_volLabel2, volumnIcon[1]);
-        lv_label_set_text(ui_emotionlabel, "😶");
+        lv_label_set_text(ui_emotionlabel, FONT_AWESOME_AI_CHIP);
+        lv_bar_set_value(ui_changeBar, 100, LV_ANIM_OFF);
         /*设置字体，网络和音量标志已内置*/
         lv_obj_set_style_text_font(ui_AITextArea, &font_puhui_16_4, LV_PART_MAIN | LV_STATE_DEFAULT);
         lv_obj_set_style_text_font(ui_userTextArea, &font_puhui_16_4, LV_PART_MAIN | LV_STATE_DEFAULT);
         lv_obj_set_style_text_font(ui_notificationLabel, &font_puhui_14_1, LV_PART_MAIN | LV_STATE_DEFAULT);
         lv_obj_set_style_text_font(ui_QRcodeLabel, &font_puhui_14_1, LV_PART_MAIN | LV_STATE_DEFAULT);
-        lv_obj_set_style_text_font(ui_emotionlabel, &font_emoji_32, LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_obj_set_style_text_font(ui_emotionlabel, &font_awesome_30_4, LV_PART_MAIN | LV_STATE_DEFAULT);
     #endif
         /*设置textarea_text*/
         // lv_textarea_set_text(ui_AITextArea, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
