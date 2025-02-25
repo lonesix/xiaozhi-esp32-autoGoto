@@ -13,7 +13,7 @@
 #include <opus_decoder.h>
 #include <opus_resampler.h>
 
-#include "protocol.h"
+#include "websocket_protocol.h"
 #include "ota.h"
 #include "background_task.h"
 
@@ -88,10 +88,11 @@ private:
     Ota ota_;
     std::mutex mutex_;
     std::list<std::function<void()>> main_tasks_;
-    std::unique_ptr<Protocol> protocol_;
+    std::unique_ptr<WebsocketProtocol> protocol_;
     EventGroupHandle_t event_group_;
     volatile ChatState chat_state_ = kChatStateUnknown;
     bool keep_listening_ = false;
+    bool IsDisconnect_ = false;
     bool aborted_ = false;
     std::string last_iot_states_;
 

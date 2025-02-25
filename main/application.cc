@@ -499,7 +499,15 @@ void Application::Start()
                             SetChatState(kChatStateListening);
                         } else {
                             SetChatState(kChatStateIdle);
+                            keep_listening_ = true;
                         }
+                        if(IsDisconnect_ == true)
+                        {
+                            ESP_LOGI(TAG, "wss断开连接");
+                            protocol_->websocket_->transport_->Disconnect();
+                            IsDisconnect_ = false;
+                        }
+                        
                     }
                 });
             } else if (strcmp(state->valuestring, "sentence_start") == 0) {
@@ -532,6 +540,33 @@ void Application::Start()
                     // this->sendCjsonToSerial("emotion",uc_string.c_str());
                 });
             }
+        }else if(strcmp(type->valuestring, "command") == 0){
+            auto Json_name = cJSON_GetObjectItem(root, "name");
+            if ((Json_name != NULL) && (strcmp(Json_name->valuestring, "LLM") == 0)) {
+                auto Json_value = cJSON_GetObjectItem(root, "value");
+                if (Json_value != NULL) {
+                    if (strcmp(Json_value->valuestring, "byebye") == 0 || strcmp(Json_value->valuestring, "leave") == 0) {
+                        Schedule([this](){
+                            keep_listening_ = false;
+                            IsDisconnect_ = true;
+                            
+                        });
+                        
+                    }
+                }
+                // auto Json_property = cJSON_GetObjectItem(root, "property");
+                // if ((Json_property != NULL) && (strcmp(Json_property->valuestring, "action") == 0)) {
+
+                //     }
+                // }
+
+
+
+            }
+
+
+
+
         } else if (strcmp(type->valuestring, "iot") == 0) {
             // auto commands = cJSON_GetObjectItem(root, "commands");
             // if (commands != NULL) {

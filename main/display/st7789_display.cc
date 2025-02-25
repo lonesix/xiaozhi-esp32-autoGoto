@@ -12,7 +12,7 @@ static const char* TAG ="St7789Display";
 #define ST7789_LVGL_TICK_PERIOD_MS 2
 #define ST7789_LVGL_TASK_MAX_DELAY_MS 20
 #define ST7789_LVGL_TASK_MIN_DELAY_MS 1
-#define ST7789_LVGL_TASK_STACK_SIZE (6 * 1024)
+#define ST7789_LVGL_TASK_STACK_SIZE (7 * 1024)
 #define ST7789_LVGL_TASK_PRIORITY 10
 
 LV_FONT_DECLARE(font_puhui_14_1);
@@ -367,7 +367,8 @@ void St7789Display::SetChatMessage(const std::string &role, const std::string &c
         lv_textarea_set_text(ui_userTextArea, content.c_str());
     } else {
         //assistant
-        lv_textarea_set_text(ui_AITextArea, content.c_str());
+        // lv_textarea_set_text(ui_AITextArea, content.c_str());
+        lv_textarea_set_text(ui_userTextArea, content.c_str());
     }
 }
 void St7789Display::SetIcon(const char *icon)

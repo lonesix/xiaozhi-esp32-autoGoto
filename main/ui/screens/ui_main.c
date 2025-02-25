@@ -101,19 +101,20 @@ void ui_main_screen_init(void)
     lv_obj_set_y(ui_AITextArea, 10);
     lv_textarea_set_max_length(ui_AITextArea, 1000);
     lv_textarea_set_placeholder_text(ui_AITextArea, "AI...");
+    lv_obj_add_flag(ui_AITextArea, LV_OBJ_FLAG_HIDDEN);     /// Flags
     lv_obj_clear_flag(ui_AITextArea, LV_OBJ_FLAG_PRESS_LOCK | LV_OBJ_FLAG_CLICK_FOCUSABLE | LV_OBJ_FLAG_GESTURE_BUBBLE |
                       LV_OBJ_FLAG_SNAPPABLE);     /// Flags
 
 
 
     ui_userTextArea = lv_textarea_create(ui_Content);
-    lv_obj_set_width(ui_userTextArea, 280);
-    lv_obj_set_height(ui_userTextArea, 75);
-    lv_obj_set_x(ui_userTextArea, 30);
+    lv_obj_set_width(ui_userTextArea, 288);
+    lv_obj_set_height(ui_userTextArea, 100);
+    lv_obj_set_x(ui_userTextArea, 15);
     lv_obj_set_y(ui_userTextArea, 45);
     lv_obj_set_align(ui_userTextArea, LV_ALIGN_LEFT_MID);
     lv_textarea_set_max_length(ui_userTextArea, 1000);
-    lv_textarea_set_placeholder_text(ui_userTextArea, "user...");
+    lv_textarea_set_placeholder_text(ui_userTextArea, "user.../AI...");
     lv_obj_clear_flag(ui_userTextArea, LV_OBJ_FLAG_PRESS_LOCK | LV_OBJ_FLAG_CLICK_FOCUSABLE | LV_OBJ_FLAG_GESTURE_BUBBLE |
                       LV_OBJ_FLAG_SNAPPABLE);     /// Flags
 
