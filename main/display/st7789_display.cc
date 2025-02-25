@@ -5,7 +5,7 @@
 #include <esp_err.h>
 #include <driver/ledc.h>
 #include <vector>
-
+#include <algorithm>
 static const char* TAG ="St7789Display";
 #define LCD_LEDC_CH LEDC_CHANNEL_0
 
@@ -16,9 +16,9 @@ static const char* TAG ="St7789Display";
 #define ST7789_LVGL_TASK_PRIORITY 10
 
 LV_FONT_DECLARE(font_puhui_14_1);
-LV_FONT_DECLARE(font_awesome_30_1);
-LV_FONT_DECLARE(font_awesome_14_1);
-LV_FONT_DECLARE(font_alipuhui20);
+LV_FONT_DECLARE(font_emoji_32);
+// LV_FONT_DECLARE(font_awesome_14_1);
+LV_FONT_DECLARE(font_puhui_16_4);
 
 static lv_disp_drv_t disp_drv;
 static lv_indev_drv_t indev_drv;
@@ -357,6 +357,51 @@ void St7789Display::ShowNotification(const std::string &notification, int durati
 }
 void St7789Display::SetEmotion(const std::string &emotion)
 {
+        struct Emotion {
+        const char* icon;
+        const char* text;
+    };
+
+    static const std::vector<Emotion> emotions = {
+        {"😶", "neutral"},
+        {"🙂", "happy"},
+        {"😆", "laughing"},
+        {"😂", "funny"},
+        {"😔", "sad"},
+        {"😠", "angry"},
+        {"😭", "crying"},
+        {"😍", "loving"},
+        {"😳", "embarrassed"},
+        {"😯", "surprised"},
+        {"😱", "shocked"},
+        {"🤔", "thinking"},
+        {"😉", "winking"},
+        {"😎", "cool"},
+        {"😌", "relaxed"},
+        {"🤤", "delicious"},
+        {"😘", "kissy"},
+        {"😏", "confident"},
+        {"😴", "sleepy"},
+        {"😜", "silly"},
+        {"🙄", "confused"}
+    };
+    
+    // 查找匹配的表情
+    auto it = std::find_if(emotions.begin(), emotions.end(),
+        [&emotion](const Emotion& e) { return e.text == emotion; });
+
+    DisplayLockGuard lock(this);
+    if (ui_emotionlabel == nullptr) {
+        return;
+    }
+
+    // 如果找到匹配的表情就显示对应图标，否则显示默认的neutral表情
+    // lv_obj_set_style_text_font(ui_emotionlabel, fonts_.emoji_font, 0);
+    if (it != emotions.end()) {
+        lv_label_set_text(ui_emotionlabel, it->icon);
+    } else {
+        lv_label_set_text(ui_emotionlabel, "😶");
+    }
 }
 void St7789Display::SetChatMessage(const std::string &role, const std::string &content)
 {
@@ -480,16 +525,17 @@ void next_frame_task_cb(lv_event_t *event)
     {
         printf("----gif play finsh----\n");
 
-        // UiGui::GetInstance.Init();
         ui_init();
         /*unicode设置网络标志特殊字体测试*/
         lv_label_set_text(ui_netLabel, wifiIcon[3]);
         lv_label_set_text(ui_volLabel2, volumnIcon[1]);
+        lv_label_set_text(ui_emotionlabel, "😶");
         /*设置字体，网络和音量标志已内置*/
-        lv_obj_set_style_text_font(ui_AITextArea, &font_alipuhui20, LV_PART_MAIN | LV_STATE_DEFAULT);
-        lv_obj_set_style_text_font(ui_userTextArea, &font_alipuhui20, LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_obj_set_style_text_font(ui_AITextArea, &font_puhui_16_4, LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_obj_set_style_text_font(ui_userTextArea, &font_puhui_16_4, LV_PART_MAIN | LV_STATE_DEFAULT);
         lv_obj_set_style_text_font(ui_notificationLabel, &font_puhui_14_1, LV_PART_MAIN | LV_STATE_DEFAULT);
         lv_obj_set_style_text_font(ui_QRcodeLabel, &font_puhui_14_1, LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_obj_set_style_text_font(ui_emotionlabel, &font_emoji_32, LV_PART_MAIN | LV_STATE_DEFAULT);
         *flag = true;
         break;
     }
@@ -528,11 +574,13 @@ void St7789Display::SetupUI()
         /*unicode设置网络标志特殊字体测试*/
         lv_label_set_text(ui_netLabel, wifiIcon[3]);
         lv_label_set_text(ui_volLabel2, volumnIcon[1]);
+        lv_label_set_text(ui_emotionlabel, "😶");
         /*设置字体，网络和音量标志已内置*/
-        lv_obj_set_style_text_font(ui_AITextArea, &font_alipuhui20, LV_PART_MAIN | LV_STATE_DEFAULT);
-        lv_obj_set_style_text_font(ui_userTextArea, &font_alipuhui20, LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_obj_set_style_text_font(ui_AITextArea, &font_puhui_16_4, LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_obj_set_style_text_font(ui_userTextArea, &font_puhui_16_4, LV_PART_MAIN | LV_STATE_DEFAULT);
         lv_obj_set_style_text_font(ui_notificationLabel, &font_puhui_14_1, LV_PART_MAIN | LV_STATE_DEFAULT);
         lv_obj_set_style_text_font(ui_QRcodeLabel, &font_puhui_14_1, LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_obj_set_style_text_font(ui_emotionlabel, &font_emoji_32, LV_PART_MAIN | LV_STATE_DEFAULT);
     #endif
         /*设置textarea_text*/
         // lv_textarea_set_text(ui_AITextArea, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");

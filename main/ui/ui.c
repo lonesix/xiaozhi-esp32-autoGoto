@@ -23,6 +23,7 @@ lv_obj_t * ui_volLabel2;
 lv_obj_t * ui_Content;
 void ui_event_AITextArea(lv_event_t * e);
 lv_obj_t * ui_AITextArea;
+lv_obj_t * ui_emotionlabel;
 void ui_event_userTextArea(lv_event_t * e);
 lv_obj_t * ui_userTextArea;
 // CUSTOM VARIABLES

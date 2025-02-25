@@ -107,6 +107,13 @@ void ui_main_screen_init(void)
 
 
 
+    ui_emotionlabel = lv_label_create(ui_Content);
+    lv_obj_set_width(ui_emotionlabel, 50);
+    lv_obj_set_height(ui_emotionlabel, 50);
+    lv_obj_set_x(ui_emotionlabel, 0);
+    lv_obj_set_y(ui_emotionlabel, -50);
+    lv_obj_set_align(ui_emotionlabel, LV_ALIGN_CENTER);
+
     ui_userTextArea = lv_textarea_create(ui_Content);
     lv_obj_set_width(ui_userTextArea, 288);
     lv_obj_set_height(ui_userTextArea, 100);
