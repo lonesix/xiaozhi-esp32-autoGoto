@@ -412,6 +412,7 @@ void Application::Start()
     wake_word_detect_.OnWakeWordDetected([this](const std::string& wake_word) {
         Schedule([this, &wake_word]() {
             if (chat_state_ == kChatStateIdle) {
+
                 SetChatState(kChatStateConnecting);
                 wake_word_detect_.EncodeWakeWordData();
 
@@ -504,8 +505,10 @@ void Application::Start()
                         if(IsDisconnect_ == true)
                         {
                             ESP_LOGI(TAG, "wss断开连接");
-                            protocol_->websocket_->transport_->Disconnect();
                             IsDisconnect_ = false;
+                            protocol_->websocket_->transport_->Disconnect();
+                            protocol_->CloseAudioChannel();
+                            test_yb = false;
                         }
                         
                     }
