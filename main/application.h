@@ -29,7 +29,7 @@
 #define AUDIO_INPUT_READY_EVENT (1 << 1)
 #define AUDIO_OUTPUT_READY_EVENT (1 << 2)
 #define EXTERNAL_VOICE_WAKE_UP_GPIO GPIO_NUM_5
-#define DEVICE_ID "abe64b93-21fd-406b-a777-abd356769bc7"
+#define DEVICE_ID "b23b844e-6b44-4c7d-8930-b9cc5690c063"
 enum ChatState {
     kChatStateUnknown,
     kChatStateIdle,

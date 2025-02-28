@@ -102,6 +102,7 @@ bool WebsocketProtocol::OpenAudioChannel() {
         if (on_audio_channel_closed_ != nullptr) {
             on_audio_channel_closed_();
         }
+        // CloseAudioChannel();
     });
 
     if (!websocket_->Connect(url.c_str())) {

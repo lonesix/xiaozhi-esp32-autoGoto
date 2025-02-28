@@ -8,7 +8,7 @@
 #include "websocket_protocol.h"
 #include "font_awesome_symbols.h"
 #include "iot/thing_manager.h"
-
+#include <esp_random.h>
 #include <cstring>
 #include <esp_log.h>
 #include <cJSON.h>
@@ -317,7 +317,7 @@ void Application::Start()
     External_voice_wake_up->OnPressDown([this]() {
     ESP_LOGI(TAG, "VoiceButton released");
     wake_word_detect_.buttonFlag = true;
-    Application::GetInstance().StartListening();
+    // Application::GetInstance().StartListening();
     
 });
     // ADC按键
@@ -351,6 +351,11 @@ void Application::Start()
     adc_button->registerCallback(1, []() {
         ESP_LOGI(ADCButtonNetwork::TAG1, "Button 2 Callback Executed");
         // 在这里添加按钮2被按下时的处理逻辑
+        ESP_LOGI(TAG, "wss断开连接");
+        
+        Application::GetInstance().protocol_->websocket_->transport_->Disconnect();
+        Application::GetInstance().protocol_->CloseAudioChannel();
+        Application::GetInstance().test_yb = false;
     }
     );
     adc_button->registerCallback(2, []() {
@@ -568,6 +573,37 @@ void Application::Start()
                                 IsDisconnect_ = true;
                                 
                             });
+                            
+                        }
+                    }
+                }else if ((Json_property != NULL) && (strcmp(Json_property->valuestring, "test") == 0)){
+                    auto Json_value = cJSON_GetObjectItem(root, "value");
+                    if (Json_value != NULL) {
+
+                        if (strcmp(Json_value->valuestring, "redled") == 0 ) {
+                            //发给协处理器
+                            this->sendCjsonToSerial( "WS2812", "write", "rgb", "2016", "1");
+                            
+                        }
+                        if (strcmp(Json_value->valuestring, "greenled") == 0 ) {
+                            //发给协处理器
+                            this->sendCjsonToSerial( "WS2812", "write", "rgb", "63488", "1");
+                            
+                        }
+                            if (strcmp(Json_value->valuestring, "rgbled") == 0 ) {
+                            //发给协处理器
+                            // 生成随机的红色值（5位）
+                            uint8_t red = esp_random() % 255;
+                            // 生成随机的绿色值（6位）
+                            uint8_t green = esp_random() % 255;
+                            // 生成随机的蓝色值（5位）
+                            uint8_t blue = esp_random() % 255;
+
+                            // 将RGB值组合成RGB565格式
+                            uint16_t rgb565 = (red << 11) | (green << 5) | blue;
+                            char buffer[20];
+                            sprintf(buffer, "%d", rgb565);
+                            this->sendCjsonToSerial( "WS2812", "write", "rgb", buffer, "1");
                             
                         }
                     }
@@ -953,16 +989,16 @@ extern "C" void send_data_cc()
     cJSON_AddStringToObject(root, "session_id", "4a429e61");
 
     // 添加name节点
-    cJSON_AddStringToObject(root, "name", "SG90");
+    cJSON_AddStringToObject(root, "name", "DHT11");
 
     // 添加type节点
-    cJSON_AddStringToObject(root, "type", "command");
+    cJSON_AddStringToObject(root, "type", "sensor");
 
     // 添加property节点
-    cJSON_AddStringToObject(root, "property", "angle");
+    cJSON_AddStringToObject(root, "property", "hum");
 
     // 添加value节点
-    cJSON_AddStringToObject(root, "value", "15");
+    cJSON_AddStringToObject(root, "value", "15.1");
         // 生成JSON字符串
     char *json_str = cJSON_Print(root);
 
@@ -1000,7 +1036,7 @@ void Application::ProcessReceivedJson(cJSON *root)
     cJSON *error_item = cJSON_GetObjectItem(root, "error");
     if (error_item == nullptr)
     {
-        ESP_LOGE(TAG, "ProcessReceivedJson Not error");
+        // ESP_LOGE(TAG, "ProcessReceivedJson Not error");
         
     }else
     {
