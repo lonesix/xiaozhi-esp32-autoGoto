@@ -585,12 +585,12 @@ void Application::Start()
                             this->sendCjsonToSerial( "WS2812", "write", "rgb", "2016", "1");
                             
                         }
-                        if (strcmp(Json_value->valuestring, "greenled") == 0 ) {
+                        else if (strcmp(Json_value->valuestring, "greenled") == 0 ) {
                             //发给协处理器
                             this->sendCjsonToSerial( "WS2812", "write", "rgb", "63488", "1");
                             
                         }
-                            if (strcmp(Json_value->valuestring, "rgbled") == 0 ) {
+                        else if (strcmp(Json_value->valuestring, "rgbled") == 0 ) {
                             //发给协处理器
                             // 生成随机的红色值（5位）
                             uint8_t red = esp_random() % 255;
@@ -606,6 +606,11 @@ void Application::Start()
                             this->sendCjsonToSerial( "WS2812", "write", "rgb", buffer, "1");
                             
                         }
+                        else if (strcmp(Json_value->valuestring, "closeled") == 0 )
+                        {
+                            this->sendCjsonToSerial( "WS2812", "write", "rgb", "0", "1");
+                        }
+                        
                     }
                 }
             }

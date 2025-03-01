@@ -10,3 +10,4 @@ dependencies.lock
 .env
 releases/
 bin.zip
+KFTJ_main.code-workspace
