@@ -192,6 +192,10 @@ void Display::SetIcon(const char* icon) {
     lv_label_set_text(emotion_label_, icon);
 }
 
+void Display::SetBacklight(uint8_t brightness)
+{
+}
+
 void Display::GotoQRcodePage()
 {
 }

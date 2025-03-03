@@ -371,10 +371,16 @@ void Application::Start()
     adc_button->registerCallback(4, []() {
         ESP_LOGI(ADCButtonNetwork::TAG1, "Button 5 Callback Executed");
         // 在这里添加按钮5被按下时的处理逻辑
+        auto& board = Board::GetInstance();
+        auto display = board.GetDisplay();
+        display->SetBacklight(0);
     }
     );
     adc_button->registerCallback(5, []() {
         ESP_LOGI(ADCButtonNetwork::TAG1, "Button 6 Callback Executed");
+        auto& board = Board::GetInstance();
+        auto display = board.GetDisplay();
+        display->SetBacklight(100);
         // 在这里添加按钮6被按下时的处理逻辑
     }
     );
@@ -609,6 +615,18 @@ void Application::Start()
                         else if (strcmp(Json_value->valuestring, "closeled") == 0 )
                         {
                             this->sendCjsonToSerial( "WS2812", "write", "rgb", "0", "1");
+                        }
+                        else if (strcmp(Json_value->valuestring, "openscreen") == 0 )
+                        {
+                            auto& board = Board::GetInstance();
+                            auto display = board.GetDisplay();
+                            display->SetBacklight(100);
+                        }
+                        else if (strcmp(Json_value->valuestring, "closescreen") == 0 )
+                        {
+                            auto& board = Board::GetInstance();
+                            auto display = board.GetDisplay();
+                            display->SetBacklight(0);
                         }
                         
                     }

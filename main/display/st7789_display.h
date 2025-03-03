@@ -33,7 +33,7 @@ private:
     lv_obj_t* side_bar_ = nullptr;
 
     void InitializeBacklight(gpio_num_t backlight_pin);
-    void SetBacklight(uint8_t brightness);
+    virtual void SetBacklight(uint8_t brightness);
     void SetupUI();
     void LvglTask();
 
