@@ -320,6 +320,77 @@ void Application::Start()
     // Application::GetInstance().StartListening();
     
 });
+    //火警任务
+    
+    xTaskCreate([](void *arg)
+    {
+        vTaskDelay(pdMS_TO_TICKS(8000));
+        while (1)
+        {
+        Application* app = (Application*)arg;
+        if (app->flame_warning == true && app->flameWarning == false) //火焰值超标，且未发送过警报
+        {
+            app->StartListening();
+            vTaskDelay(pdMS_TO_TICKS(200));
+            while (app->GetChatState() != ChatState::kChatStateListening)
+            {
+                vTaskDelay(pdMS_TO_TICKS(120));
+            }
+            
+            if (app->GetChatState() == ChatState::kChatStateListening)
+            {
+                std::string greet = "请重复:高温火灾警报warning！当前区域检测到高温及火焰，请立即撤离至安全区域！重复：当前区域检测到高温及火焰，请立即撤离至安全区域！";
+                app->protocol_->SendGreetContent(greet);
+            }
+            app->flameWarning = true;
+            vTaskDelay(pdMS_TO_TICKS(6000));
+        }else if (app->flame_warning == false && app->flameWarning == true) //火焰值恢复正常，且已发送过警报
+        {
+            app->StartListening();
+            vTaskDelay(pdMS_TO_TICKS(200));
+            while (app->GetChatState() != ChatState::kChatStateListening)
+            {
+                vTaskDelay(pdMS_TO_TICKS(120));
+            }
+            if (app->GetChatState() == ChatState::kChatStateListening)
+            {
+                std::string greet = "请重复:高温警报解除！当前区域火焰值恢复正常，警报解除！重复：当前区域火焰值恢复正常，警报解除！重复完毕后退下吧";
+                app->protocol_->SendGreetContent(greet);
+            }
+            app->flameWarning = false;
+        }else if (app->flame_warning == true && app->flameWarning == true) //火焰值超标，且已发送过警报
+        {
+            vTaskDelay(pdMS_TO_TICKS(200));
+            if(app->GetChatState() != ChatState::kChatStateIdle)//空闲
+            {
+                app->StartListening();
+                vTaskDelay(pdMS_TO_TICKS(200));
+                while (app->GetChatState() != ChatState::kChatStateListening)
+                {
+                    vTaskDelay(pdMS_TO_TICKS(120));
+                }
+                if (app->GetChatState() == ChatState::kChatStateListening)
+                {
+                    std::string greet = "请重复:高温火灾警报warning！当前区域检测到高温及火焰，请立即撤离至安全区域！重复：当前区域检测到高温及火焰，请立即撤离至安全区域！";
+                    app->protocol_->SendGreetContent(greet);
+                }
+            }
+        }
+        vTaskDelay(pdMS_TO_TICKS(100));
+        }
+        
+        
+
+    },
+    "FlameWarningTask",
+    4096,
+    this,
+    1,
+    nullptr
+    );
+
+
+
     // ADC按键
     const uint16_t thresholds[] = {
     // (uint16_t)((float)0.38 / 3.3 * 4096-150), // 按键1的阈值
@@ -344,23 +415,32 @@ void Application::Start()
     adc_button->registerCallback(0, []() { 
         ESP_LOGI(ADCButtonNetwork::TAG1, "Button 1 Callback Executed");
         // 在这里添加按钮1被按下时的处理逻辑
-        Application::GetInstance().StartListening();
-        vTaskDelay(pdMS_TO_TICKS(120));
-        Application::GetInstance().StopListening();
+        // Application::GetInstance().StartListening();
+        // vTaskDelay(pdMS_TO_TICKS(120));
+        // Application::GetInstance().StopListening();
         });
     adc_button->registerCallback(1, []() {
         ESP_LOGI(ADCButtonNetwork::TAG1, "Button 2 Callback Executed");
         // 在这里添加按钮2被按下时的处理逻辑
-        ESP_LOGI(TAG, "wss断开连接");
-        
-        Application::GetInstance().protocol_->websocket_->transport_->Disconnect();
-        Application::GetInstance().protocol_->CloseAudioChannel();
-        Application::GetInstance().test_yb = false;
+
     }
     );
     adc_button->registerCallback(2, []() {
         ESP_LOGI(ADCButtonNetwork::TAG1, "Button 3 Callback Executed");
         // 在这里添加按钮3被按下时的处理逻辑
+        Application::GetInstance().StartListening();
+        vTaskDelay(pdMS_TO_TICKS(200));
+        while (Application::GetInstance().GetChatState() != ChatState::kChatStateListening)
+        {
+            vTaskDelay(pdMS_TO_TICKS(120));
+        }
+        
+        if (Application::GetInstance().GetChatState() == ChatState::kChatStateListening)
+        {
+            std::string greet = "高温预警，请你发出一连串警报拟声词重复十次并附带高温警报提示！";
+            Application::GetInstance().protocol_->SendGreetContent(greet);
+        }
+        
     }
     );
     adc_button->registerCallback(3, []() {
@@ -1038,6 +1118,7 @@ extern "C" void send_data_cc()
 void Application::ProcessReceivedJson(cJSON *root)
 {   
     static bool Isinit_xie = false;
+    
     // // 协处理器是否初始化成功
     // if (Isinit_xie == false)
     // {
@@ -1048,6 +1129,22 @@ void Application::ProcessReceivedJson(cJSON *root)
     //     }
     //     return;
     // }
+    auto name = cJSON_GetObjectItem(root, "name");////{"name":"Flame","type":"sensor","property":"raw","value":"4095"}
+    if (!std::string(name->valuestring).compare("Flame"))
+    {
+        auto value = cJSON_GetObjectItem(root, "value");
+        int intValue = std::stoi(value->valuestring);
+        printf("Flame value: %d\n", intValue);
+        if (intValue <= 100)
+        {
+            //火焰报警
+            flame_warning = true;
+        }else if (intValue >= 4000)
+        {
+            //取消火焰报警
+            flame_warning = false;
+        }
+    }
     
     if (!test_yb)
     {

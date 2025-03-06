@@ -48,7 +48,7 @@ public:
     virtual void SendIotDescriptors(const std::string& descriptors);
     virtual void SendIotStates(const std::string& states);
     virtual void SendIotContent(const std::string& name, const std::string& type, const std::string& property, const std::string& value);
-
+    virtual void SendGreetContent(const std::string& text);
 protected:
     std::function<void(const cJSON* root)> on_incoming_json_;
     std::function<void(std::vector<uint8_t>&& data)> on_incoming_audio_;
