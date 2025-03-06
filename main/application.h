@@ -80,8 +80,8 @@ private:
     AudioProcessor audio_processor_;
 #endif
     bool test_yb = false;
-    bool flame_warning = false;
-    bool flameWarning = false;
+    volatile bool flame_warning = false;
+    volatile bool flameWarning = false;
     UartComm* uc_uart;
     UartComm* camera_uart;
     std::string camera_string;

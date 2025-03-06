@@ -325,6 +325,7 @@ void Application::Start()
     xTaskCreate([](void *arg)
     {
         vTaskDelay(pdMS_TO_TICKS(8000));
+        bool flag = false;
         while (1)
         {
         Application* app = (Application*)arg;
@@ -339,29 +340,40 @@ void Application::Start()
             
             if (app->GetChatState() == ChatState::kChatStateListening)
             {
-                std::string greet = "请重复:高温火灾警报warning！当前区域检测到高温及火焰，请立即撤离至安全区域！重复：当前区域检测到高温及火焰，请立即撤离至安全区域！";
+                vTaskDelay(pdMS_TO_TICKS(200));
+                std::string greet = "火灾警报";
                 app->protocol_->SendGreetContent(greet);
             }
             app->flameWarning = true;
-            vTaskDelay(pdMS_TO_TICKS(6000));
+            vTaskDelay(pdMS_TO_TICKS(3000));
         }else if (app->flame_warning == false && app->flameWarning == true) //火焰值恢复正常，且已发送过警报
         {
             app->StartListening();
             vTaskDelay(pdMS_TO_TICKS(200));
             while (app->GetChatState() != ChatState::kChatStateListening)
             {
-                vTaskDelay(pdMS_TO_TICKS(120));
+                vTaskDelay(pdMS_TO_TICKS(200));
             }
             if (app->GetChatState() == ChatState::kChatStateListening)
             {
-                std::string greet = "请重复:高温警报解除！当前区域火焰值恢复正常，警报解除！重复：当前区域火焰值恢复正常，警报解除！重复完毕后退下吧";
+                vTaskDelay(pdMS_TO_TICKS(120));
+                std::string greet = "火灾警报解除";
                 app->protocol_->SendGreetContent(greet);
             }
             app->flameWarning = false;
+            app->sendCjsonToSerial( "WS2812", "write", "rgb", "0", "1");
+            flag = false;
+            vTaskDelay(pdMS_TO_TICKS(1000));
+            if (app->GetChatState() == ChatState::kChatStateListening)
+            {
+                std::string greet = "火灾警报解除";
+                app->protocol_->SendGreetContent(greet);
+            }
+            
         }else if (app->flame_warning == true && app->flameWarning == true) //火焰值超标，且已发送过警报
         {
             vTaskDelay(pdMS_TO_TICKS(200));
-            if(app->GetChatState() != ChatState::kChatStateIdle)//空闲
+            if(app->GetChatState() == ChatState::kChatStateIdle)//空闲
             {
                 app->StartListening();
                 vTaskDelay(pdMS_TO_TICKS(200));
@@ -371,12 +383,29 @@ void Application::Start()
                 }
                 if (app->GetChatState() == ChatState::kChatStateListening)
                 {
-                    std::string greet = "请重复:高温火灾警报warning！当前区域检测到高温及火焰，请立即撤离至安全区域！重复：当前区域检测到高温及火焰，请立即撤离至安全区域！";
+                    vTaskDelay(pdMS_TO_TICKS(120));
+                    std::string greet = "火灾警报";
                     app->protocol_->SendGreetContent(greet);
                 }
             }
         }
-        vTaskDelay(pdMS_TO_TICKS(100));
+        vTaskDelay(pdMS_TO_TICKS(500));
+        if (app->flame_warning ==true)
+        {
+            
+            if (flag == false)
+            {
+                app->sendCjsonToSerial( "WS2812", "write", "rgb", "2016", "1");
+                flag = true;
+            }else
+            {
+                app->sendCjsonToSerial( "WS2812", "write", "rgb", "0", "1");
+                flag = false;
+            }
+            
+            
+        }
+        
         }
         
         
@@ -1275,7 +1304,7 @@ void Application::ProcessReceivedJson(cJSON *root)
     //     ESP_LOGW(TAG, "Unknown JSON type: %s", type);
     // }
 
-    protocol_->SendIotContent(xie_name->valuestring, xie_type->valuestring, xie_property->valuestring, xie_value->valuestring);
+    // protocol_->SendIotContent(xie_name->valuestring, xie_type->valuestring, xie_property->valuestring, xie_value->valuestring);
 }
 //Camera对主
 void Application::CameraProcessReceivedJson(cJSON *root)
