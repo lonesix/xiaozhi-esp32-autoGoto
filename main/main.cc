@@ -32,8 +32,8 @@ extern "C" void app_main(void)
 
     // Otherwise, launch the application
     // Application::GetInstance().displayTest();
-    // Application::GetInstance().Start();
-    Application::GetInstance().KaijiGifStart();
+    Application::GetInstance().Start();
+    // Application::GetInstance().KaijiGifStart();
     // ESP_LOGI(TAG, "Free internal:");
     // ESP_LOGI(TAG, "Free internal:");
     // Dump CPU usage every 10 second

@@ -26,7 +26,8 @@ extern const char p3_err_pin_start[] asm("_binary_err_pin_p3_start");
 extern const char p3_err_pin_end[] asm("_binary_err_pin_p3_end");
 extern const char p3_err_wificonfig_start[] asm("_binary_err_wificonfig_p3_start");
 extern const char p3_err_wificonfig_end[] asm("_binary_err_wificonfig_p3_end");
-
+extern const char p3_xiao1xiaoge_start[] asm("_binary_xiao1xiaoge_p3_start");
+extern const char p3_xiao1xiaoge_end[] asm("_binary_xiao1xiaoge_p3_end");
 static const char* const STATE_STRINGS[] = {
     "unknown",
     "idle",
@@ -103,9 +104,10 @@ void Application::CheckNewVersion() {
 
 void Application::Alert(const std::string& title, const std::string& message) {
     ESP_LOGW(TAG, "Alert: %s, %s", title.c_str(), message.c_str());
+    #if CONFIG_BOARD_TYPE_LICHUANG_DEV
     auto display = Board::GetInstance().GetDisplay();
     display->ShowNotification(message);
-
+    #endif
     if (message == "PIN is not ready") {
         PlayLocalFile(p3_err_pin_start, p3_err_pin_end - p3_err_pin_start);
     } else if (message == "Configuring WiFi") {
@@ -282,11 +284,12 @@ void Application::Start()
         Application* app = (Application*)arg;
         app->MainLoop();
         vTaskDelete(NULL);
-    }, "main_loop", 5120 * 2, this, 2, nullptr);
+    }, "main_loop", 1024 * 8, this, 2, nullptr);
 
     /* Wait for the network to be ready */
+    // #if CONFIG_BOARD_TYPE_LICHUANG_DEV
     board.StartNetwork();
-
+    // #endif
     // Check for new firmware version or get the MQTT broker address
     // xTaskCreate([](void* arg) {
     //     Application* app = (Application*)arg;
@@ -294,6 +297,7 @@ void Application::Start()
     //     vTaskDelete(NULL);
     // }, "check_new_version", 4096 * 2, this, 1, nullptr);
 
+    #if CONFIG_BOARD_TYPE_LICHUANG_DEV
     // 启动串口接收任务
     xTaskCreate([](void *arg)
     {
@@ -311,6 +315,7 @@ void Application::Start()
             app->camera_uart->receiveCameraDataCjson();
             vTaskDelay(pdMS_TO_TICKS(10));  // 每 ms 检查一次接收的数据
     } }, "camera_uart_receive_task", 4096, this, 1, nullptr);
+    #endif
     // 自定义语音唤醒
     External_voice_wake_up = new Button(EXTERNAL_VOICE_WAKE_UP_GPIO, 1);
 
@@ -322,104 +327,104 @@ void Application::Start()
 });
     //火警任务
     
-    xTaskCreate([](void *arg)
-    {
-        vTaskDelay(pdMS_TO_TICKS(8000));
-        bool flag = false;
-        while (1)
-        {
-        Application* app = (Application*)arg;
-        if (app->flame_warning == true && app->flameWarning == false) //火焰值超标，且未发送过警报
-        {
-            app->StartListening();
-            vTaskDelay(pdMS_TO_TICKS(200));
-            while (app->GetChatState() != ChatState::kChatStateListening)
-            {
-                vTaskDelay(pdMS_TO_TICKS(120));
-            }
+    // xTaskCreate([](void *arg)
+    // {
+    //     vTaskDelay(pdMS_TO_TICKS(8000));
+    //     bool flag = false;
+    //     while (1)
+    //     {
+    //     Application* app = (Application*)arg;
+    //     if (app->flame_warning == true && app->flameWarning == false) //火焰值超标，且未发送过警报
+    //     {
+    //         app->StartListening();
+    //         vTaskDelay(pdMS_TO_TICKS(200));
+    //         while (app->GetChatState() != ChatState::kChatStateListening)
+    //         {
+    //             vTaskDelay(pdMS_TO_TICKS(120));
+    //         }
             
-            if (app->GetChatState() == ChatState::kChatStateListening)
-            {
-                vTaskDelay(pdMS_TO_TICKS(200));
-                std::string greet = "火灾警报";
-                app->protocol_->SendGreetContent(greet);
-            }
-            app->flameWarning = true;
-            vTaskDelay(pdMS_TO_TICKS(3000));
-        }else if (app->flame_warning == false && app->flameWarning == true) //火焰值恢复正常，且已发送过警报
-        {
-            app->StartListening();
-            vTaskDelay(pdMS_TO_TICKS(200));
-            while (app->GetChatState() != ChatState::kChatStateListening)
-            {
-                vTaskDelay(pdMS_TO_TICKS(200));
-            }
-            if (app->GetChatState() == ChatState::kChatStateListening)
-            {
-                vTaskDelay(pdMS_TO_TICKS(120));
-                std::string greet = "火灾警报解除";
-                app->protocol_->SendGreetContent(greet);
-            }
-            app->flameWarning = false;
-            app->sendCjsonToSerial( "WS2812", "write", "rgb", "0", "1");
-            flag = false;
-            vTaskDelay(pdMS_TO_TICKS(1000));
-            if (app->GetChatState() == ChatState::kChatStateListening)
-            {
-                std::string greet = "火灾警报解除";
-                app->protocol_->SendGreetContent(greet);
-            }
+    //         if (app->GetChatState() == ChatState::kChatStateListening)
+    //         {
+    //             vTaskDelay(pdMS_TO_TICKS(200));
+    //             std::string greet = "火灾警报";
+    //             app->protocol_->SendGreetContent(greet);
+    //         }
+    //         app->flameWarning = true;
+    //         vTaskDelay(pdMS_TO_TICKS(3000));
+    //     }else if (app->flame_warning == false && app->flameWarning == true) //火焰值恢复正常，且已发送过警报
+    //     {
+    //         app->StartListening();
+    //         vTaskDelay(pdMS_TO_TICKS(200));
+    //         while (app->GetChatState() != ChatState::kChatStateListening)
+    //         {
+    //             vTaskDelay(pdMS_TO_TICKS(200));
+    //         }
+    //         if (app->GetChatState() == ChatState::kChatStateListening)
+    //         {
+    //             vTaskDelay(pdMS_TO_TICKS(120));
+    //             std::string greet = "火灾警报解除";
+    //             app->protocol_->SendGreetContent(greet);
+    //         }
+    //         app->flameWarning = false;
+    //         app->sendCjsonToSerial( "WS2812", "write", "rgb", "0", "1");
+    //         flag = false;
+    //         vTaskDelay(pdMS_TO_TICKS(1000));
+    //         if (app->GetChatState() == ChatState::kChatStateListening)
+    //         {
+    //             std::string greet = "火灾警报解除";
+    //             app->protocol_->SendGreetContent(greet);
+    //         }
             
-        }else if (app->flame_warning == true && app->flameWarning == true) //火焰值超标，且已发送过警报
-        {
-            vTaskDelay(pdMS_TO_TICKS(200));
-            if(app->GetChatState() == ChatState::kChatStateIdle)//空闲
-            {
-                app->StartListening();
-                vTaskDelay(pdMS_TO_TICKS(200));
-                while (app->GetChatState() != ChatState::kChatStateListening)
-                {
-                    vTaskDelay(pdMS_TO_TICKS(120));
-                }
-                if (app->GetChatState() == ChatState::kChatStateListening)
-                {
-                    vTaskDelay(pdMS_TO_TICKS(120));
-                    std::string greet = "火灾警报";
-                    app->protocol_->SendGreetContent(greet);
-                }
-            }
-        }
-        vTaskDelay(pdMS_TO_TICKS(500));
-        if (app->flame_warning ==true)
-        {
+    //     }else if (app->flame_warning == true && app->flameWarning == true) //火焰值超标，且已发送过警报
+    //     {
+    //         vTaskDelay(pdMS_TO_TICKS(200));
+    //         if(app->GetChatState() == ChatState::kChatStateIdle)//空闲
+    //         {
+    //             app->StartListening();
+    //             vTaskDelay(pdMS_TO_TICKS(200));
+    //             while (app->GetChatState() != ChatState::kChatStateListening)
+    //             {
+    //                 vTaskDelay(pdMS_TO_TICKS(120));
+    //             }
+    //             if (app->GetChatState() == ChatState::kChatStateListening)
+    //             {
+    //                 vTaskDelay(pdMS_TO_TICKS(120));
+    //                 std::string greet = "火灾警报";
+    //                 app->protocol_->SendGreetContent(greet);
+    //             }
+    //         }
+    //     }
+    //     vTaskDelay(pdMS_TO_TICKS(500));
+    //     if (app->flame_warning ==true)
+    //     {
             
-            if (flag == false)
-            {
-                app->sendCjsonToSerial( "WS2812", "write", "rgb", "2016", "1");
-                flag = true;
-            }else
-            {
-                app->sendCjsonToSerial( "WS2812", "write", "rgb", "0", "1");
-                flag = false;
-            }
+    //         if (flag == false)
+    //         {
+    //             app->sendCjsonToSerial( "WS2812", "write", "rgb", "2016", "1");
+    //             flag = true;
+    //         }else
+    //         {
+    //             app->sendCjsonToSerial( "WS2812", "write", "rgb", "0", "1");
+    //             flag = false;
+    //         }
             
             
-        }
+    //     }
         
-        }
+    //     }
         
         
 
-    },
-    "FlameWarningTask",
-    4096,
-    this,
-    1,
-    nullptr
-    );
+    // },
+    // "FlameWarningTask",
+    // 4096,
+    // this,
+    // 1,
+    // nullptr
+    // );
 
 
-
+    #if CONFIG_BOARD_TYPE_LICHUANG_DEV
     // ADC按键
     const uint16_t thresholds[] = {
     // (uint16_t)((float)0.38 / 3.3 * 4096-150), // 按键1的阈值
@@ -493,6 +498,7 @@ void Application::Start()
         // 在这里添加按钮6被按下时的处理逻辑
     }
     );
+    #endif
     // xTaskCreate([](void *arg)
     // {
     //     Application* app = (Application*)arg;
@@ -565,7 +571,9 @@ void Application::Start()
 #endif
 
     // Initialize the protocol
+    #if CONFIG_BOARD_TYPE_LICHUANG_DEV
     display->SetStatus("初始化协议");
+    #endif
 #ifdef CONFIG_CONNECTION_TYPE_WEBSOCKET
     protocol_ = std::make_unique<WebsocketProtocol>();
 #else
@@ -622,14 +630,7 @@ void Application::Start()
                             SetChatState(kChatStateIdle);
                             keep_listening_ = true;
                         }
-                        if(IsDisconnect_ == true)
-                        {
-                            ESP_LOGI(TAG, "wss断开连接");
-                            IsDisconnect_ = false;
-                            protocol_->websocket_->transport_->Disconnect();
-                            protocol_->CloseAudioChannel();
-                            test_yb = false;
-                        }
+
                         
                     }
                 });
@@ -637,7 +638,9 @@ void Application::Start()
                 auto text = cJSON_GetObjectItem(root, "text");
                 if (text != NULL) {
                     ESP_LOGI(TAG, "<< %s", text->valuestring);
+                    #if CONFIG_BOARD_TYPE_LICHUANG_DEV
                     display->SetChatMessage("assistant", text->valuestring);
+                    #endif
                     uc_string = text->valuestring;
                     Schedule([this]() {
                         // this->sendCjsonToSerial("tts",uc_string.c_str());
@@ -648,7 +651,9 @@ void Application::Start()
             auto text = cJSON_GetObjectItem(root, "text");
             if (text != NULL) {
                 ESP_LOGI(TAG, ">> %s", text->valuestring);
+                #if CONFIG_BOARD_TYPE_LICHUANG_DEV
                 display->SetChatMessage("user", text->valuestring);
+                #endif
                 uc_string = text->valuestring;
                 Schedule([this]() {
                     // this->sendCjsonToSerial("stt",uc_string.c_str());
@@ -673,7 +678,9 @@ void Application::Start()
                 {
                     auto emotion = cJSON_GetObjectItem(root, "value");
                     if (emotion != NULL) {
+                        #if CONFIG_BOARD_TYPE_LICHUANG_DEV
                         display->SetEmotion(emotion->valuestring);
+                        #endif
                         uc_string = emotion->valuestring;
                         // Schedule([this]() {
                         //     // this->sendCjsonToSerial("emotion",uc_string.c_str());
@@ -686,7 +693,15 @@ void Application::Start()
                             Schedule([this](){
                                 keep_listening_ = false;
                                 IsDisconnect_ = true;
-                                
+                                if(IsDisconnect_ == true)
+                                {
+                                    ESP_LOGI(TAG, "wss断开连接");
+                                    IsDisconnect_ = false;
+                                    protocol_->websocket_->transport_->Disconnect();
+                                    protocol_->CloseAudioChannel();
+                                    test_yb = false;
+                                    
+                                }
                             });
                             
                         }
@@ -727,15 +742,19 @@ void Application::Start()
                         }
                         else if (strcmp(Json_value->valuestring, "openscreen") == 0 )
                         {
+                            #if CONFIG_BOARD_TYPE_LICHUANG_DEV
                             auto& board = Board::GetInstance();
                             auto display = board.GetDisplay();
                             display->SetBacklight(100);
+                            #endif
                         }
                         else if (strcmp(Json_value->valuestring, "closescreen") == 0 )
                         {
+                            #if CONFIG_BOARD_TYPE_LICHUANG_DEV
                             auto& board = Board::GetInstance();
                             auto display = board.GetDisplay();
                             display->SetBacklight(0);
+                            #endif
                         }
                         
                     }
@@ -793,11 +812,14 @@ void Application::Start()
     });
 
     // Blink the LED to indicate the device is running
+    #if CONFIG_BOARD_TYPE_LICHUANG_DEV
     display->SetStatus("待命");
+    #endif
     builtin_led->SetGreen();
     builtin_led->BlinkOnce();
 
     SetChatState(kChatStateIdle);
+    PlayLocalFile(p3_xiao1xiaoge_start, p3_xiao1xiaoge_end - p3_xiao1xiaoge_start);
 }
 
 void Application::Schedule(std::function<void()> callback) {
@@ -955,16 +977,19 @@ void Application::SetChatState(ChatState state) {
     ESP_LOGI(TAG, "STATE: %s", STATE_STRINGS[chat_state_]);
     // The state is changed, wait for all background tasks to finish
     background_task_.WaitForCompletion();
-
+    #if CONFIG_BOARD_TYPE_LICHUANG_DEV
     auto display = Board::GetInstance().GetDisplay();
+    #endif
     auto builtin_led = Board::GetInstance().GetBuiltinLed();
     switch (state) {
         case kChatStateUnknown:
         case kChatStateIdle:
             builtin_led->TurnOff();
+            #if CONFIG_BOARD_TYPE_LICHUANG_DEV
             display->SetStatus("千机赋能");
             display->SetChatMessage("user", "请问有什么可以帮您吗?");
             display->SetEmotion("neutral");
+            #endif
             Schedule([this](){ /*this->sendCjsonToSerial("status", "Idle");*/ });
 #ifdef CONFIG_IDF_TARGET_ESP32S3
             audio_processor_.Stop();
@@ -973,13 +998,17 @@ void Application::SetChatState(ChatState state) {
         case kChatStateConnecting:
             builtin_led->SetBlue();
             builtin_led->TurnOn();
+            #if CONFIG_BOARD_TYPE_LICHUANG_DEV
             display->SetStatus("连接中...");
+            #endif
             Schedule([this](){ /*this->sendCjsonToSerial("status", "Connecting");*/ });
             break;
         case kChatStateListening:
             builtin_led->SetRed();
             builtin_led->TurnOn();
+            #if CONFIG_BOARD_TYPE_LICHUANG_DEV
             display->SetStatus("聆听中...");
+            #endif
             // display->SetEmotion("neutral");
             Schedule([this](){ /*this->sendCjsonToSerial("status", "Listening");*/ });
             ResetDecoder();
@@ -992,7 +1021,9 @@ void Application::SetChatState(ChatState state) {
         case kChatStateSpeaking:
             builtin_led->SetGreen();
             builtin_led->TurnOn();
+            #if CONFIG_BOARD_TYPE_LICHUANG_DEV
             display->SetStatus("说话中...");
+            #endif
             Schedule([this](){ /*this->sendCjsonToSerial("status", "Speaking");*/ });
             ResetDecoder();
 #if CONFIG_IDF_TARGET_ESP32S3
@@ -1158,22 +1189,22 @@ void Application::ProcessReceivedJson(cJSON *root)
     //     }
     //     return;
     // }
-    auto name = cJSON_GetObjectItem(root, "name");////{"name":"Flame","type":"sensor","property":"raw","value":"4095"}
-    if (!std::string(name->valuestring).compare("Flame"))
-    {
-        auto value = cJSON_GetObjectItem(root, "value");
-        int intValue = std::stoi(value->valuestring);
-        printf("Flame value: %d\n", intValue);
-        if (intValue <= 100)
-        {
-            //火焰报警
-            flame_warning = true;
-        }else if (intValue >= 4000)
-        {
-            //取消火焰报警
-            flame_warning = false;
-        }
-    }
+    // auto name = cJSON_GetObjectItem(root, "name");////{"name":"Flame","type":"sensor","property":"raw","value":"4095"}
+    // if (!std::string(name->valuestring).compare("Flame"))
+    // {
+    //     auto value = cJSON_GetObjectItem(root, "value");
+    //     int intValue = std::stoi(value->valuestring);
+    //     printf("Flame value: %d\n", intValue);
+    //     if (intValue <= 100)
+    //     {
+    //         //火焰报警
+    //         // flame_warning = true;
+    //     }else if (intValue >= 4000)
+    //     {
+    //         //取消火焰报警
+    //         // flame_warning = false;
+    //     }
+    // }
     
     if (!test_yb)
     {

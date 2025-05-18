@@ -1,6 +1,7 @@
 #include "wifi_board.h"
 #include "audio_codecs/no_audio_codec.h"
-#include "display/ssd1306_display.h"
+// #include "display/ssd1306_display.h"
+#include "display/no_display.h"
 #include "system_reset.h"
 #include "application.h"
 #include "button.h"
@@ -21,22 +22,22 @@ private:
     Button touch_button_;
     Button volume_up_button_;
     Button volume_down_button_;
-    SystemReset system_reset_;
+    // SystemReset system_reset_;
 
     void InitializeDisplayI2c() {
-        i2c_master_bus_config_t bus_config = {
-            .i2c_port = (i2c_port_t)0,
-            .sda_io_num = DISPLAY_SDA_PIN,
-            .scl_io_num = DISPLAY_SCL_PIN,
-            .clk_source = I2C_CLK_SRC_DEFAULT,
-            .glitch_ignore_cnt = 7,
-            .intr_priority = 0,
-            .trans_queue_depth = 0,
-            .flags = {
-                .enable_internal_pullup = 1,
-            },
-        };
-        ESP_ERROR_CHECK(i2c_new_master_bus(&bus_config, &display_i2c_bus_));
+        // i2c_master_bus_config_t bus_config = {
+        //     .i2c_port = (i2c_port_t)0,
+        //     .sda_io_num = DISPLAY_SDA_PIN,
+        //     .scl_io_num = DISPLAY_SCL_PIN,
+        //     .clk_source = I2C_CLK_SRC_DEFAULT,
+        //     .glitch_ignore_cnt = 7,
+        //     .intr_priority = 0,
+        //     .trans_queue_depth = 0,
+        //     .flags = {
+        //         .enable_internal_pullup = 1,
+        //     },
+        // };
+        // ESP_ERROR_CHECK(i2c_new_master_bus(&bus_config, &display_i2c_bus_));
     }
 
     void InitializeButtons() {
@@ -89,7 +90,7 @@ private:
     void InitializeIot() {
         auto& thing_manager = iot::ThingManager::GetInstance();
         thing_manager.AddThing(iot::CreateThing("Speaker"));
-        thing_manager.AddThing(iot::CreateThing("Lamp"));
+        // thing_manager.AddThing(iot::CreateThing("Lamp"));
     }
 
 public:
@@ -97,12 +98,13 @@ public:
         boot_button_(BOOT_BUTTON_GPIO),
         touch_button_(TOUCH_BUTTON_GPIO),
         volume_up_button_(VOLUME_UP_BUTTON_GPIO),
-        volume_down_button_(VOLUME_DOWN_BUTTON_GPIO),
-        system_reset_(RESET_NVS_BUTTON_GPIO, RESET_FACTORY_BUTTON_GPIO) {
+        volume_down_button_(VOLUME_DOWN_BUTTON_GPIO){
+        // system_reset_(RESET_NVS_BUTTON_GPIO, RESET_FACTORY_BUTTON_GPIO)
+         
         // Check if the reset button is pressed
-        system_reset_.CheckButtons();
+        // system_reset_.CheckButtons();
 
-        InitializeDisplayI2c();
+        // InitializeDisplayI2c();
         InitializeButtons();
         InitializeIot();
     }
@@ -124,7 +126,8 @@ public:
     }
 
     virtual Display* GetDisplay() override {
-        static Ssd1306Display display(display_i2c_bus_, DISPLAY_WIDTH, DISPLAY_HEIGHT, DISPLAY_MIRROR_X, DISPLAY_MIRROR_Y);
+        static NoDisplay display;
+        // static Ssd1306Display display(display_i2c_bus_, DISPLAY_WIDTH, DISPLAY_HEIGHT, DISPLAY_MIRROR_X, DISPLAY_MIRROR_Y);
         return &display;
     }
 };
