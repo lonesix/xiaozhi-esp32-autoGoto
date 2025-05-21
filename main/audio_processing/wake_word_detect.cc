@@ -155,11 +155,12 @@ void WakeWordDetect::AudioDetectionTask() {
             {
                 this->buttonFlag = false;
                 StopDetection();
-                last_detected_wake_word_ = "你好小智";
+                last_detected_wake_word_ = "小一小一";
             }else{
                 this->buttonFlag = false;
                 StopDetection();
-                last_detected_wake_word_ = wake_words_[res->wake_word_index - 1];
+                last_detected_wake_word_ = "你好小一";
+                // wake_words_[res->wake_word_index - 1];
                 ESP_LOGE(TAG, "Wake word detected: %s", last_detected_wake_word_.c_str());
             }
             

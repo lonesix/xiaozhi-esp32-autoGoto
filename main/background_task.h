@@ -10,7 +10,7 @@
 
 class BackgroundTask {
 public:
-    BackgroundTask(uint32_t stack_size = 4096 * 2);
+    BackgroundTask(uint32_t stack_size = 1024 * 10);
     ~BackgroundTask();
 
     void Schedule(std::function<void()> callback);

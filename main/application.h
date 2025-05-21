@@ -30,7 +30,8 @@
 #define AUDIO_OUTPUT_READY_EVENT (1 << 2)
 #define EXTERNAL_VOICE_WAKE_UP_GPIO GPIO_NUM_17
 // #define DEVICE_ID "b23b844e-6b44-4c7d-8930-b9cc5690c063"//test1
-#define DEVICE_ID "04ea9a7a-9a24-4a66-9fed-115635b2864b"//印测
+#define DEVICE_ID "28d48d6c-6857-4f6c-bd8a-4b66920ee4c8"//小一
+// #define DEVICE_ID "04ea9a7a-9a24-4a66-9fed-115635b2864b"//印测
 // #define DEVICE_ID "d4e46e7d-37eb-4209-aaec-bb580a16c229"//yu测
 // f6da006c-46ed-4652-a03e-d55e18b6a287
 // #define DEVICE_ID "df9b06ed-49ee-4389-aa5d-31e45eb84f4a"//A02
@@ -62,7 +63,15 @@ enum ChatState {
     kChatStateSpeaking,
     kChatStateUpgrading
 };
+enum PlayxiaogeState {
 
+    StateIdle,
+    StatePlay,//需要播放
+    StatePlaying,
+   
+    Stateplayend, //需要关闭
+
+};
 #define OPUS_FRAME_DURATION_MS 60
 
 class Application {
@@ -77,8 +86,32 @@ public:
 
     void displayTest();
     void KaijiGifStart();
+    void playxiaoge();
     void Start();
     ChatState GetChatState() const { return chat_state_; }
+    PlayxiaogeState GetPlayxiaogeState() const { return playxiaoge_; }
+    bool protocol_IsConnected() const { 
+        if (protocol_ == nullptr) {
+            return false;
+        }
+        if( protocol_->websocket_ == nullptr)
+        {
+            return false;
+        }
+        return protocol_->websocket_->IsConnected(); 
+    }
+    void ClosePlayxiaoge() {
+        playxiaoge_ = Stateplayend;
+        ResetDecoder();
+        // #ifdef CONFIG_IDF_TARGET_ESP32S3
+        //     audio_processor_.Stop();
+        // #endif
+        background_task_.WaitForCompletion();
+    }
+    void PlayxiaogeIdle() {
+        playxiaoge_ = StateIdle;
+        
+    }
     void Schedule(std::function<void()> callback);
     void SetChatState(ChatState state);
     void Alert(const std::string& title, const std::string& message);
@@ -92,8 +125,13 @@ public:
     void sendCjsonToCameraSerial(const char *name, const char *type, const char *property, const char *value, const char *session_id);
     void ProcessReceivedJson(cJSON* root);
     void CameraProcessReceivedJson(cJSON* root);
-
-
+    void SetWakeSound(bool wake_sound){
+        wake_sound_ = wake_sound;
+    }
+    bool GetWakeSound(){
+        return wake_sound_;
+    }
+    
 private:
     Application();
     ~Application();
@@ -105,6 +143,8 @@ private:
     bool test_yb = false;
     volatile bool flame_warning = false;
     volatile bool flameWarning = false;
+    volatile PlayxiaogeState playxiaoge_ = StateIdle;
+    volatile bool wake_sound_ = false;
     UartComm* uc_uart;
     UartComm* camera_uart;
     std::string camera_string;
@@ -143,6 +183,7 @@ private:
     void CheckNewVersion();
 
     void PlayLocalFile(const char* data, size_t size);
+    void PlayLocalFile_zuse(const char* data, size_t size);
 };
 
 #endif // _APPLICATION_H_

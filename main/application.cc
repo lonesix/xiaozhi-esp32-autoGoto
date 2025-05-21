@@ -16,6 +16,7 @@
 #include <arpa/inet.h>
 #include "adcButton.h"
 #include "button.h"
+
 // #define TAG("Application")
 const char *TAG = "Application";
 const char* ADCButtonNetwork::TAG1 = "adc_button_network";
@@ -28,6 +29,10 @@ extern const char p3_err_wificonfig_start[] asm("_binary_err_wificonfig_p3_start
 extern const char p3_err_wificonfig_end[] asm("_binary_err_wificonfig_p3_end");
 extern const char p3_xiao1xiaoge_start[] asm("_binary_xiao1xiaoge_p3_start");
 extern const char p3_xiao1xiaoge_end[] asm("_binary_xiao1xiaoge_p3_end");
+extern const char p3_success_start[] asm("_binary_success_p3_start");
+extern const char p3_success_end[] asm("_binary_success_p3_end");
+extern const char p3_wakeup_start[] asm("_binary_wakeup_p3_start");
+extern const char p3_wakeup_end[] asm("_binary_wakeup_p3_end");
 static const char* const STATE_STRINGS[] = {
     "unknown",
     "idle",
@@ -114,10 +119,24 @@ void Application::Alert(const std::string& title, const std::string& message) {
         PlayLocalFile(p3_err_wificonfig_start, p3_err_wificonfig_end - p3_err_wificonfig_start);
     } else if (message == "Registration denied") {
         PlayLocalFile(p3_err_reg_start, p3_err_reg_end - p3_err_reg_start);
+    } else if (message == "Success") {
+        PlayLocalFile(p3_success_start, p3_success_end - p3_success_start);
+    } else if (message == "Wakeup") {
+
+        PlayLocalFile(p3_wakeup_start, p3_wakeup_end - p3_wakeup_start);
+
+    }else if (message == "Wakeup1") {
+        
+        PlayLocalFile(p3_wakeup_start, p3_wakeup_end - p3_wakeup_start);
+        
+        
     }
+
 }
 
 void Application::PlayLocalFile(const char* data, size_t size) {
+    
+    background_task_.WaitForCompletion();
     ESP_LOGI(TAG, "PlayLocalFile: %zu bytes", size);
     SetDecodeSampleRate(16000);
     for (const char* p = data; p < data + size; ) {
@@ -132,7 +151,50 @@ void Application::PlayLocalFile(const char* data, size_t size) {
 
         std::lock_guard<std::mutex> lock(mutex_);
         audio_decode_queue_.emplace_back(std::move(opus));
+        if(playxiaoge_ == Stateplayend){
+            ESP_LOGI(TAG, "playxiaoge_ == Stateplayend???");
+            playxiaoge_ = StateIdle;
+            break;
+            }
+        }
+            
+    ESP_LOGI(TAG, "PlayLocalFile end!!!");
+}
+
+void Application::PlayLocalFile_zuse(const char* data, size_t size) {
+    
+    auto codec = Board::GetInstance().GetAudioCodec();
+    ESP_LOGI(TAG, "PlayLocalFile: %zu bytes", size);
+    SetDecodeSampleRate(16000);
+    std::lock_guard<std::mutex> lock(mutex_);
+    for (const char* p = data; p < data + size; ) {
+        auto p3 = (BinaryProtocol3*)p;
+        p += sizeof(BinaryProtocol3);
+
+        auto payload_size = ntohs(p3->payload_size);
+        std::vector<uint8_t> opus;
+        opus.resize(payload_size);
+        memcpy(opus.data(), p3->payload, payload_size);
+        p += payload_size;
+
+        std::vector<int16_t> pcm;
+        if (opus_decoder_->Decode(std::move(opus), pcm)) {
+            // Resample if the sample rate is different
+            if (opus_decode_sample_rate_ != codec->output_sample_rate()) {
+                int target_size = output_resampler_.GetOutputSamples(pcm.size());
+                std::vector<int16_t> resampled(target_size);
+                output_resampler_.Process(pcm.data(), pcm.size(), resampled.data());
+                pcm = std::move(resampled);
+            }
+
+            codec->OutputData(pcm);
+            return;
+        }
+
+        
     }
+            
+    ESP_LOGI(TAG, "PlayLocalFile_zuse end!!!");
 }
 
 void Application::ToggleChatState() {
@@ -168,6 +230,7 @@ void Application::StartListening() {
             return;
         }
         if(wake_word_detect_.buttonFlag ){
+            // wake_word_detect_.buttonFlag = false;
             return;
         }
         keep_listening_ = false;
@@ -183,8 +246,9 @@ void Application::StartListening() {
             protocol_->SendStartListening(kListeningModeManualStop);
             SetChatState(kChatStateListening);
         } else if (chat_state_ == kChatStateSpeaking) {
-            AbortSpeaking(kAbortReasonNone);
-            protocol_->SendStartListening(kListeningModeManualStop);
+            keep_listening_ = true;
+            AbortSpeaking(kAbortReasonWakeWordDetected);
+            protocol_->SendStartListening(kListeningModeAutoStop);
             // FIXME: Wait for the speaker to empty the buffer
             vTaskDelay(pdMS_TO_TICKS(120));
             SetChatState(kChatStateListening);
@@ -247,6 +311,33 @@ void Application::KaijiGifStart()
 
 }
 
+void Application::playxiaoge()
+{
+    if (chat_state_ == kChatStateListening && playxiaoge_ == StatePlay) {
+    {
+        SetChatState(kChatStateSpeaking);
+        if(playxiaoge_ == StatePlay)
+        {
+            playxiaoge_ = StatePlaying;
+            
+
+            Schedule([this](){
+                                
+
+                PlayLocalFile(p3_xiao1xiaoge_start, p3_xiao1xiaoge_end - p3_xiao1xiaoge_start);
+            
+            
+            
+            });
+        }
+
+    }
+}
+    
+  
+
+
+}
 
 void Application::Start()
 {
@@ -284,7 +375,7 @@ void Application::Start()
         Application* app = (Application*)arg;
         app->MainLoop();
         vTaskDelete(NULL);
-    }, "main_loop", 1024 * 8, this, 2, nullptr);
+    }, "main_loop", 1024 * 11, this, 2, nullptr);
 
     /* Wait for the network to be ready */
     // #if CONFIG_BOARD_TYPE_LICHUANG_DEV
@@ -296,7 +387,14 @@ void Application::Start()
     //     app->CheckNewVersion();
     //     vTaskDelete(NULL);
     // }, "check_new_version", 4096 * 2, this, 1, nullptr);
-
+    // 启动播放校歌任务
+    xTaskCreate([](void *arg)
+    {
+        Application* app = (Application*)arg;
+        while (true) {
+            app->playxiaoge();
+            vTaskDelay(pdMS_TO_TICKS(100));  // 每 ms 检查一次接收的数据
+    } }, "play_xiaoge_task", 4096, this, 1, nullptr);
     #if CONFIG_BOARD_TYPE_LICHUANG_DEV
     // 启动串口接收任务
     xTaskCreate([](void *arg)
@@ -320,9 +418,73 @@ void Application::Start()
     External_voice_wake_up = new Button(EXTERNAL_VOICE_WAKE_UP_GPIO, 1);
 
     External_voice_wake_up->OnPressDown([this]() {
-    ESP_LOGI(TAG, "VoiceButton released");
-    wake_word_detect_.buttonFlag = true;
-    // Application::GetInstance().StartListening();
+    
+        
+    if (Application::GetInstance().protocol_IsConnected() == false&& Application::GetInstance().GetPlayxiaogeState() == StatePlaying)
+        {
+            ESP_LOGI(TAG, "connected is false and playxiaoge is playing");
+            Application::GetInstance().ClosePlayxiaoge();
+            Application::GetInstance().PlayxiaogeIdle();
+            wake_word_detect_.buttonFlag = false;
+            Application::GetInstance().ResetDecoder();
+            vTaskDelay(pdMS_TO_TICKS(300));
+            background_task_.WaitForCompletion();
+            Alert("wake/abort", "Wakeup");
+            Application::GetInstance().Schedule([this](){
+                background_task_.WaitForCompletion();
+                Application::GetInstance().ToggleChatState();
+            });
+            
+            // Alert("wake/abort", "Wakeup");
+        }else if (Application::GetInstance().GetChatState() == kChatStateSpeaking && Application::GetInstance().GetPlayxiaogeState() == StatePlaying) {
+        ESP_LOGI(TAG, "ChatState is kChatStateSpeaking and playxiaoge is playing");
+        wake_word_detect_.buttonFlag = false;
+        Application::GetInstance().ClosePlayxiaoge();
+        if (Application::GetInstance().protocol_IsConnected() == false)
+        {
+            Application::GetInstance().SetChatState(kChatStateIdle);
+            // Alert("wake/abort", "Success");
+        }else {
+            // Application::GetInstance().SetChatState(kChatStateIdle);
+            
+            Application::GetInstance().PlayxiaogeIdle();
+            // Application::GetInstance().Schedule([this](){
+                Application::GetInstance().ResetDecoder();
+                vTaskDelay(pdMS_TO_TICKS(300));
+                background_task_.WaitForCompletion();
+                Alert("wake/abort", "Wakeup");
+                
+            // });
+            
+            Application::GetInstance().Schedule([this](){
+                background_task_.WaitForCompletion();
+                Application::GetInstance().protocol_->SendStartListening(kListeningModeAutoStop);
+                Application::GetInstance().SetChatState(kChatStateListening);
+    
+                // Application::GetInstance().StartListening();
+                
+
+            });
+
+            // Alert("wake/abort", "Wakeup");
+        }
+        }else if (Application::GetInstance().GetChatState() == kChatStateSpeaking && Application::GetInstance().protocol_IsConnected() == true) {
+            if(Application::GetInstance().GetPlayxiaogeState() == StateIdle) {
+                ESP_LOGI(TAG, "ChatState is kChatStateSpeaking and playxiaoge is idle and protocol is connected");
+                
+
+                wake_word_detect_.buttonFlag = true;
+                // Application::GetInstance().protocol_->SendStartListening(kListeningModeAutoStop);
+                // Application::GetInstance().StartListening();
+                
+            }
+        }else {
+            wake_word_detect_.buttonFlag = true;
+        }
+        
+        ESP_LOGI(TAG, "VoiceButton released");    
+
+    
     
 });
     //火警任务
@@ -536,9 +698,22 @@ void Application::Start()
     });
 
     wake_word_detect_.OnWakeWordDetected([this](const std::string& wake_word) {
+        
+            if (chat_state_ == kChatStateIdle) {
+                // Application::GetInstance().Schedule([this](){
+                //     Alert("wake/abort", "Wakeup");
+                //     vTaskDelay(pdMS_TO_TICKS(300));
+                // });
+                ResetDecoder();
+                vTaskDelay(pdMS_TO_TICKS(300));
+                background_task_.WaitForCompletion();
+                Alert("wake/abort", "Wakeup");
+                // vTaskDelay(pdMS_TO_TICKS(250));
+            }
+        
         Schedule([this, &wake_word]() {
             if (chat_state_ == kChatStateIdle) {
-
+                background_task_.WaitForCompletion();
                 SetChatState(kChatStateConnecting);
                 wake_word_detect_.EncodeWakeWordData();
 
@@ -557,6 +732,7 @@ void Application::Start()
                 // Set the chat state to wake word detected
                 protocol_->SendWakeWordDetected(wake_word);
                 ESP_LOGI(TAG, "Wake word detected: %s", wake_word.c_str());
+                
                 keep_listening_ = true;
                 SetChatState(kChatStateListening);
             } else if (chat_state_ == kChatStateSpeaking) {
@@ -620,9 +796,48 @@ void Application::Start()
                     }
                 });
             } else if (strcmp(state->valuestring, "stop") == 0) {
+                if (aborted_ ==true)
+                {
+                    // Schedule([this](){
+                        aborted_ = false;
+                        ResetDecoder();
+                        vTaskDelay(pdMS_TO_TICKS(800));
+                        Alert("wake/abort", "Wakeup");
+                    //     ResetDecoder();
+                    //     vTaskDelay(pdMS_TO_TICKS(300));
+                    //     background_task_.WaitForCompletion();
+                    //     Alert("wake/abort", "Wakeup1");
+                    // });
+
+                    // Schedule([this](){
+                    //     vTaskDelay(pdMS_TO_TICKS(210));
+                    //     background_task_.WaitForCompletion();
+                    //     aborted_ = true;
+                    // });
+                    // aborted_ = false;
+                    // ResetDecoder();
+                    // vTaskDelay(pdMS_TO_TICKS(200));
+                    // Alert("wake/abort", "Wakeup1");
+                    // vTaskDelay(pdMS_TO_TICKS(210));
+                    // aborted_ = true;
+                }else if(IsDisconnect_!= true){
+                    vTaskDelay(pdMS_TO_TICKS(800));
+                    Alert("wake/abort", "Wakeup");
+                }
+                
+                
                 Schedule([this]() {
                     if (chat_state_ == kChatStateSpeaking) {
                         background_task_.WaitForCompletion();
+                        if(IsDisconnect_ == true)
+                        {
+                            ESP_LOGI(TAG, "wss断开连接");
+                            IsDisconnect_ = false;
+                            protocol_->websocket_->transport_->Disconnect();
+                            protocol_->CloseAudioChannel();
+                            test_yb = false;
+                            
+                        }
                         if (keep_listening_) {
                             protocol_->SendStartListening(kListeningModeAutoStop);
                             SetChatState(kChatStateListening);
@@ -693,71 +908,24 @@ void Application::Start()
                             Schedule([this](){
                                 keep_listening_ = false;
                                 IsDisconnect_ = true;
-                                if(IsDisconnect_ == true)
-                                {
-                                    ESP_LOGI(TAG, "wss断开连接");
-                                    IsDisconnect_ = false;
-                                    protocol_->websocket_->transport_->Disconnect();
-                                    protocol_->CloseAudioChannel();
-                                    test_yb = false;
-                                    
-                                }
+
                             });
                             
                         }
+                        else if (strcmp(Json_value->valuestring, "playxiaoge") == 0 ) {
+                            playxiaoge_ = StatePlay;
+                        //     Schedule([this](){
+                                
+                        //         if(playxiaoge_ == true)
+                        //         {
+                        //             playxiaoge_ = false;
+                        //             PlayLocalFile(p3_xiao1xiaoge_start, p3_xiao1xiaoge_end - p3_xiao1xiaoge_start);
+                        //         }
+                                
+                                
+                        // });
                     }
-                }else if ((Json_property != NULL) && (strcmp(Json_property->valuestring, "test") == 0)){
-                    auto Json_value = cJSON_GetObjectItem(root, "value");
-                    if (Json_value != NULL) {
-
-                        if (strcmp(Json_value->valuestring, "redled") == 0 ) {
-                            //发给协处理器
-                            this->sendCjsonToSerial( "WS2812", "write", "rgb", "2016", "1");
-                            
-                        }
-                        else if (strcmp(Json_value->valuestring, "greenled") == 0 ) {
-                            //发给协处理器
-                            this->sendCjsonToSerial( "WS2812", "write", "rgb", "63488", "1");
-                            
-                        }
-                        else if (strcmp(Json_value->valuestring, "rgbled") == 0 ) {
-                            //发给协处理器
-                            // 生成随机的红色值（5位）
-                            uint8_t red = esp_random() % 255;
-                            // 生成随机的绿色值（6位）
-                            uint8_t green = esp_random() % 255;
-                            // 生成随机的蓝色值（5位）
-                            uint8_t blue = esp_random() % 255;
-
-                            // 将RGB值组合成RGB565格式
-                            uint16_t rgb565 = (red << 11) | (green << 5) | blue;
-                            char buffer[20];
-                            sprintf(buffer, "%d", rgb565);
-                            this->sendCjsonToSerial( "WS2812", "write", "rgb", buffer, "1");
-                            
-                        }
-                        else if (strcmp(Json_value->valuestring, "closeled") == 0 )
-                        {
-                            this->sendCjsonToSerial( "WS2812", "write", "rgb", "0", "1");
-                        }
-                        else if (strcmp(Json_value->valuestring, "openscreen") == 0 )
-                        {
-                            #if CONFIG_BOARD_TYPE_LICHUANG_DEV
-                            auto& board = Board::GetInstance();
-                            auto display = board.GetDisplay();
-                            display->SetBacklight(100);
-                            #endif
-                        }
-                        else if (strcmp(Json_value->valuestring, "closescreen") == 0 )
-                        {
-                            #if CONFIG_BOARD_TYPE_LICHUANG_DEV
-                            auto& board = Board::GetInstance();
-                            auto display = board.GetDisplay();
-                            display->SetBacklight(0);
-                            #endif
-                        }
-                        
-                    }
+                }
                 }
             }
 
@@ -819,7 +987,7 @@ void Application::Start()
     builtin_led->BlinkOnce();
 
     SetChatState(kChatStateIdle);
-    PlayLocalFile(p3_xiao1xiaoge_start, p3_xiao1xiaoge_end - p3_xiao1xiaoge_start);
+    PlayLocalFile(p3_success_start, p3_success_end - p3_success_start);
 }
 
 void Application::Schedule(std::function<void()> callback) {
@@ -893,7 +1061,9 @@ void Application::OutputAudio() {
         if (aborted_) {
             return;
         }
-
+        if (GetPlayxiaogeState() == Stateplayend) {
+            return;
+        }
         std::vector<int16_t> pcm;
         if (!opus_decoder_->Decode(std::move(opus), pcm)) {
             return;
@@ -973,6 +1143,7 @@ void Application::SetChatState(ChatState state) {
         return;
     }
     
+    
     chat_state_ = state;
     ESP_LOGI(TAG, "STATE: %s", STATE_STRINGS[chat_state_]);
     // The state is changed, wait for all background tasks to finish
@@ -1004,6 +1175,7 @@ void Application::SetChatState(ChatState state) {
             Schedule([this](){ /*this->sendCjsonToSerial("status", "Connecting");*/ });
             break;
         case kChatStateListening:
+
             builtin_led->SetRed();
             builtin_led->TurnOn();
             #if CONFIG_BOARD_TYPE_LICHUANG_DEV
