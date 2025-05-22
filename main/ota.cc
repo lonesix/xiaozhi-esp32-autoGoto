@@ -18,7 +18,10 @@
 #include <vector>
 #include <sstream>
 #include <algorithm>
-
+#if CONFIG_BOARD_TYPE_AI_MAGIC_BOX_V2_SPOT 
+#include "boards/Ai-MagicBox-V2-spot/config.h"
+// #include "config.h"
+#endif
 #define TAG "Ota"
 
 
@@ -105,6 +108,8 @@ bool Ota::CheckVersion() {
     if (root == NULL) {
         ESP_LOGE(TAG, "Failed to parse JSON response");
         return false;
+    }else {
+        ESP_LOGW(TAG, "JSON response: %s", data.c_str());
     }
 
     has_activation_code_ = false;
@@ -144,6 +149,7 @@ bool Ota::CheckVersion() {
             }
         }
         has_mqtt_config_ = true;
+        ESP_LOGI(TAG, "mqtt section found !");
     } else {
         ESP_LOGI(TAG, "No mqtt section found !");
     }
@@ -160,9 +166,14 @@ bool Ota::CheckVersion() {
                 settings.SetInt(item->string, item->valueint);
             }
         }
+        #if CONFIG_BOARD_TYPE_AI_MAGIC_BOX_V2_SPOT 
+        settings.SetString("url", QJG_WS_SERVER_URL);
+        ESP_LOGW(TAG, "QJG websocket url is %s", QJG_WS_SERVER_URL);
+        #endif
         has_websocket_config_ = true;
+        ESP_LOGI(TAG, "websocket section found!");
     } else {
-        ESP_LOGI(TAG, "No websocket section found!");
+        ESP_LOGE(TAG, "No websocket section found!");
     }
 
     has_server_time_ = false;

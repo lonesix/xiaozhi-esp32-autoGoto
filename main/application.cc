@@ -1,3 +1,4 @@
+
 #include "application.h"
 #include "board.h"
 #include "display.h"
@@ -21,6 +22,11 @@
 #include <cJSON.h>
 #include <driver/gpio.h>
 #include <arpa/inet.h>
+
+#if CONFIG_BOARD_TYPE_AI_MAGIC_BOX_V2_SPOT 
+#include "boards/Ai-MagicBox-V2-spot/config.h"
+// #include "config.h"
+#endif
 
 #define TAG "Application"
 
@@ -398,7 +404,41 @@ void Application::Start() {
     // Initialize the protocol
     display->SetStatus(Lang::Strings::LOADING_PROTOCOL);
 
-    if (ota_.HasMqttConfig()) {
+    enum  {
+        mqtt,
+        websocket
+    }prior_ProtocolType = websocket;
+
+#if CONFIG_BOARD_TYPE_AI_MAGIC_BOX_V2_SPOT 
+    switch (ServerConnectionMethod)//ServerConnectionMethod
+    {
+        case SERVERCONNECTIONMETHOD::PROTOCOL_NONE:
+            /* code */
+            break;
+        case SERVERCONNECTIONMETHOD::PROTOCOL_MQTT:
+            prior_ProtocolType = mqtt;
+            break;
+        case SERVERCONNECTIONMETHOD::PROTOCOL_WEBSOCKET_XIAOZHI:
+            prior_ProtocolType = websocket;
+            break;
+        case SERVERCONNECTIONMETHOD::PROTOCOL_WEBSOCKET_QJG:
+            prior_ProtocolType = websocket;
+            break;
+        default:
+            break;
+    }
+#endif
+
+    if (ota_.HasMqttConfig() && ota_.HasWebsocketConfig()) {
+        if (prior_ProtocolType == mqtt) {
+            protocol_ = std::make_unique<MqttProtocol>();
+        }else if (prior_ProtocolType == websocket) {
+        
+            protocol_ = std::make_unique<WebsocketProtocol>();
+        }
+        
+        /* code */
+    }else if (ota_.HasMqttConfig()) {
         protocol_ = std::make_unique<MqttProtocol>();
     } else if (ota_.HasWebsocketConfig()) {
         protocol_ = std::make_unique<WebsocketProtocol>();

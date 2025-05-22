@@ -9,7 +9,10 @@
 #include <esp_log.h>
 #include <arpa/inet.h>
 #include "assets/lang_config.h"
-
+#if CONFIG_BOARD_TYPE_AI_MAGIC_BOX_V2_SPOT 
+#include "boards/Ai-MagicBox-V2-spot/config.h"
+// #include "config.h"
+#endif
 #define TAG "WS"
 
 WebsocketProtocol::WebsocketProtocol() {
@@ -117,7 +120,14 @@ bool WebsocketProtocol::OpenAudioChannel() {
         websocket_->SetHeader("Authorization", token.c_str());
     }
     websocket_->SetHeader("Protocol-Version", std::to_string(version_).c_str());
+    ESP_LOGI(TAG, "Protocol-Version: %d", version_);
+    #if CONFIG_BOARD_TYPE_AI_MAGIC_BOX_V2_SPOT 
+    websocket_->SetHeader("Device-Id", DEVICE_ID);
+    ESP_LOGW(TAG, "Device-Id: %s", DEVICE_ID);
+    #else
     websocket_->SetHeader("Device-Id", SystemInfo::GetMacAddress().c_str());
+    ESP_LOGI(TAG, "Device-Id: %s", SystemInfo::GetMacAddress().c_str());
+    #endif
     websocket_->SetHeader("Client-Id", Board::GetInstance().GetUuid().c_str());
 
     websocket_->OnData([this](const char* data, size_t len, bool binary) {

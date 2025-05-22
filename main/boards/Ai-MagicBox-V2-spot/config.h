@@ -11,6 +11,18 @@
 #define ML307_TX_PIN GPIO_NUM_48
 // #endif
 
+enum SERVERCONNECTIONMETHOD{
+    PROTOCOL_NONE = 0,
+    PROTOCOL_MQTT,
+    PROTOCOL_WEBSOCKET_XIAOZHI,
+    PROTOCOL_WEBSOCKET_QJG,
+};
+#define ServerConnectionMethod  PROTOCOL_WEBSOCKET_XIAOZHI
+
+#if ServerConnectionMethod == PROTOCOL_WEBSOCKET_QJG
+#define QJG_WS_SERVER_URL "wss://aihub.nankai.edu.cn/terminal-server"
+#endif
+
 #define AUDIO_INPUT_SAMPLE_RATE  16000
 #define AUDIO_OUTPUT_SAMPLE_RATE 16000
 
