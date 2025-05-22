@@ -30,6 +30,7 @@ private:
     i2c_master_bus_handle_t i2c_bus_;
     Button boot_button_;
     Button key_button_;
+    Button External_voice_wake_up_;
     adc_oneshot_unit_handle_t adc1_handle;
     adc_cali_handle_t adc1_cali_handle;
     bool do_calibration = false;
@@ -86,6 +87,18 @@ private:
 
     void InitializeButtons() {
         boot_button_.OnClick([this]() {
+            auto& app = Application::GetInstance();
+            if (GetNetworkType() == NetworkType::WIFI) {
+                if (app.GetDeviceState() == kDeviceStateStarting && !WifiStation::GetInstance().IsConnected()) {
+                    // cast to WifiBoard
+                    auto& wifi_board = static_cast<WifiBoard&>(GetCurrentBoard());
+                    wifi_board.ResetWifiConfiguration();
+                }
+            }
+            app.ToggleChatState();
+        });
+
+        External_voice_wake_up_.OnClick([this]() {
             auto& app = Application::GetInstance();
             if (GetNetworkType() == NetworkType::WIFI) {
                 if (app.GetDeviceState() == kDeviceStateStarting && !WifiStation::GetInstance().IsConnected()) {
@@ -205,7 +218,7 @@ private:
 
 public:
     //NET_IS_WIFI_OR_ML307 在config.h中定义
-    AiMagicBoxV2SpotBoard() : DualNetworkBoard(ML307_TX_PIN, ML307_RX_PIN, 4096,NET_IS_WIFI_OR_ML307),boot_button_(BOOT_BUTTON_GPIO), key_button_(KEY_BUTTON_GPIO, true) {
+    AiMagicBoxV2SpotBoard() : DualNetworkBoard(ML307_TX_PIN, ML307_RX_PIN, 4096,NET_IS_WIFI_OR_ML307),boot_button_(BOOT_BUTTON_GPIO), key_button_(KEY_BUTTON_GPIO, true),External_voice_wake_up_(EXTERNAL_VOICE_WAKE_UP_GPIO,true) {
         InitializePowerCtl();
         InitializeADC();
         InitializeI2c();
