@@ -1,4 +1,5 @@
-#include "wifi_board.h"
+// #include "wifi_board.h"
+#include "dual_network_board.h"
 #include "audio_codecs/es8311_audio_codec.h"
 #include "application.h"
 #include "button.h"
@@ -24,7 +25,7 @@ bool button_released_ = false;
 bool shutdown_ready_ = false;
 esp_timer_handle_t shutdown_timer;
 
-class EspSpotS3Bot : public WifiBoard {
+class AiMagicBoxV2SpotBoard  : public DualNetworkBoard {
 private:
     i2c_master_bus_handle_t i2c_bus_;
     Button boot_button_;
@@ -86,7 +87,14 @@ private:
     void InitializeButtons() {
         boot_button_.OnClick([this]() {
             auto& app = Application::GetInstance();
-            ResetWifiConfiguration();
+            if (GetNetworkType() == NetworkType::WIFI) {
+                if (app.GetDeviceState() == kDeviceStateStarting && !WifiStation::GetInstance().IsConnected()) {
+                    // cast to WifiBoard
+                    auto& wifi_board = static_cast<WifiBoard&>(GetCurrentBoard());
+                    wifi_board.ResetWifiConfiguration();
+                }
+            }
+            app.ToggleChatState();
         });
 
         key_button_.OnClick([this]() {
@@ -179,7 +187,7 @@ private:
 
         esp_timer_create_args_t timer_args = {
             .callback = [](void* arg) {
-                auto* self = static_cast<EspSpotS3Bot*>(arg);
+                auto* self = static_cast<AiMagicBoxV2SpotBoard*>(arg);
                 auto* led = static_cast<CircularStrip*>(self->GetLed());
                 if (led) {
                     led->SetSingleColor(0, {0, 0, 0});
@@ -196,13 +204,21 @@ private:
     }
 
 public:
-    EspSpotS3Bot() : boot_button_(BOOT_BUTTON_GPIO), key_button_(KEY_BUTTON_GPIO, true) {
+    //NET_IS_WIFI_OR_ML307 在config.h中定义
+    AiMagicBoxV2SpotBoard() : DualNetworkBoard(ML307_TX_PIN, ML307_RX_PIN, 4096,NET_IS_WIFI_OR_ML307),boot_button_(BOOT_BUTTON_GPIO), key_button_(KEY_BUTTON_GPIO, true) {
         InitializePowerCtl();
         InitializeADC();
         InitializeI2c();
         InitializeButtons();
         InitializeIot();
     }
+    // EspSpotS3Bot() : boot_button_(BOOT_BUTTON_GPIO), key_button_(KEY_BUTTON_GPIO, true) {
+    //     InitializePowerCtl();
+    //     InitializeADC();
+    //     InitializeI2c();
+    //     InitializeButtons();
+    //     InitializeIot();
+    // }
 
     virtual Led* GetLed() override {
         static CircularStrip led(LED_PIN, 1);
@@ -248,4 +264,4 @@ public:
     }
 };
 
-DECLARE_BOARD(EspSpotS3Bot);
+DECLARE_BOARD(AiMagicBoxV2SpotBoard);
