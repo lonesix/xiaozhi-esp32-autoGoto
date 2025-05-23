@@ -17,11 +17,14 @@ enum SERVERCONNECTIONMETHOD{
     PROTOCOL_WEBSOCKET_XIAOZHI,
     PROTOCOL_WEBSOCKET_QJG,
 };
-#define ServerConnectionMethod  PROTOCOL_WEBSOCKET_XIAOZHI
+#define ServerConnectionMethod  PROTOCOL_MQTT
+#define QJG_WS_SERVER_OPTIONS  (PROTOCOL_WEBSOCKET_QJG == ServerConnectionMethod)? 1:0
+#define CHANGE_WS_SERVER_URL  (CONFIG_BOARD_TYPE_AI_MAGIC_BOX_V2_SPOT && (ServerConnectionMethod == PROTOCOL_WEBSOCKET_QJG))? 1:0
 
-#if ServerConnectionMethod == PROTOCOL_WEBSOCKET_QJG
 #define QJG_WS_SERVER_URL "wss://aihub.nankai.edu.cn/terminal-server"
-#endif
+
+#define XIAOZHI_WS_SERVER_URL "wss://api.tenclass.net/xiaozhi/v1/"
+
 
 #define AUDIO_INPUT_SAMPLE_RATE  16000
 #define AUDIO_OUTPUT_SAMPLE_RATE 16000

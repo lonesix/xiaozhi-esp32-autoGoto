@@ -166,10 +166,12 @@ bool Ota::CheckVersion() {
                 settings.SetInt(item->string, item->valueint);
             }
         }
-        #if CONFIG_BOARD_TYPE_AI_MAGIC_BOX_V2_SPOT 
-        settings.SetString("url", QJG_WS_SERVER_URL);
-        ESP_LOGW(TAG, "QJG websocket url is %s", QJG_WS_SERVER_URL);
-        #endif
+        ESP_LOGW(TAG, "条件： %d %d", CHANGE_WS_SERVER_URL,QJG_WS_SERVER_OPTIONS);
+        if (CHANGE_WS_SERVER_URL ) {
+            settings.SetString("url", QJG_WS_SERVER_URL);
+
+            ESP_LOGW(TAG, "SetString QJG websocket url is %s", QJG_WS_SERVER_URL);
+        }
         has_websocket_config_ = true;
         ESP_LOGI(TAG, "websocket section found!");
     } else {
