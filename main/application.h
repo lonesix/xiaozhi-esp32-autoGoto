@@ -32,8 +32,8 @@
 #define CHECK_NEW_VERSION_DONE_EVENT (1 << 3)
 
 // #define DEVICE_ID "b23b844e-6b44-4c7d-8930-b9cc5690c063"//test1
-#define DEVICE_ID "28d48d6c-6857-4f6c-bd8a-4b66920ee4c8"//小一
-// #define DEVICE_ID "04ea9a7a-9a24-4a66-9fed-115635b2864b"//印测
+// #define DEVICE_ID "28d48d6c-6857-4f6c-bd8a-4b66920ee4c8"//小一
+#define DEVICE_ID "04ea9a7a-9a24-4a66-9fed-115635b2864b"//印测
 // #define DEVICE_ID "d4e46e7d-37eb-4209-aaec-bb580a16c229"//yu测
 // f6da006c-46ed-4652-a03e-d55e18b6a287
 // #define DEVICE_ID "df9b06ed-49ee-4389-aa5d-31e45eb84f4a"//A02
@@ -101,6 +101,10 @@ public:
 private:
     Application();
     ~Application();
+
+#if CONFIG_BOARD_TYPE_AI_MAGIC_BOX_V2_SPOT
+    bool IsCloseConnect_ =false; //speaking的stop到来是否需要关闭连接
+#endif
 
 #if CONFIG_USE_WAKE_WORD_DETECT
     WakeWordDetect wake_word_detect_;

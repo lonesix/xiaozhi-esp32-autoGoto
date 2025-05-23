@@ -482,6 +482,7 @@ void Application::Start() {
     });
     protocol_->OnIncomingJson([this, display](const cJSON* root) {
         // Parse JSON data
+        printf("Received JSON: %s\n", cJSON_Print(root));
         auto type = cJSON_GetObjectItem(root, "type");
         if (strcmp(type->valuestring, "tts") == 0) {
             auto state = cJSON_GetObjectItem(root, "state");
@@ -503,6 +504,20 @@ void Application::Start() {
                         }
                     }
                 });
+                if (IsCloseConnect_ == true)
+                {
+                    IsCloseConnect_ = false;
+                    Schedule([this]() {
+                        if (protocol_) {
+                            protocol_->CloseAudioChannel();
+
+                            // protocol_->Close();
+                        }
+                    });
+
+                }
+                
+
             } else if (strcmp(state->valuestring, "sentence_start") == 0) {
                 auto text = cJSON_GetObjectItem(root, "text");
                 if (text != NULL) {
@@ -534,6 +549,22 @@ void Application::Start() {
                 for (int i = 0; i < cJSON_GetArraySize(commands); ++i) {
                     auto command = cJSON_GetArrayItem(commands, i);
                     thing_manager.Invoke(command);
+                }
+            }
+        }else if (strcmp(type->valuestring, "command") == 0){
+            auto Json_name  = cJSON_GetObjectItem(root, "name");
+            if (Json_name  != NULL && (strcmp(Json_name->valuestring, "LLM") == 0)) {
+                auto Json_property = cJSON_GetObjectItem(root, "property");
+                if ((Json_property != NULL) && (strcmp(Json_property->valuestring, "action") == 0)){
+                    auto Json_value = cJSON_GetObjectItem(root, "value");
+                    if (Json_value != NULL) {
+                        if (strcmp(Json_value->valuestring, "byebye") == 0 || strcmp(Json_value->valuestring, "leave") == 0) {
+                            IsCloseConnect_ = true;
+
+                            
+                        }
+                    }
+
                 }
             }
         } else if (strcmp(type->valuestring, "system") == 0) {
