@@ -517,7 +517,7 @@ static void app_imu_task(void *arg)
         // bmi270_axis_t axis_offset = {0.0f, 0.0f, 0.0f};
         bmi270_axis_t axis_offset = app_imu_read();
         
-        vTaskDelay(pdMS_TO_TICKS(10));
+        vTaskDelay(pdMS_TO_TICKS(1000));
         // lv_obj_t * current_screen = lv_disp_get_scr_act(NULL);
         // if (current_screen == ui_dice) {
         //     app_dice_event(axis_offset);

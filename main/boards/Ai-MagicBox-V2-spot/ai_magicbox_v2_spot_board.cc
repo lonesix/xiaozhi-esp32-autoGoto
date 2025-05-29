@@ -62,11 +62,11 @@ private:
             .scl_io_num = AUDIO_CODEC_I2C_SCL_PIN,
             .sda_pullup_en = GPIO_PULLUP_ENABLE,
             .scl_pullup_en = GPIO_PULLUP_ENABLE,
-            // .master.clk_speed = 400000
+            .master = 400000
         };
         i2c_bus_handle_t i2c_bus_handle_ = i2c_bus_create(I2C_NUM_0, &i2c_bus_conf);
 
-        app_imu_init(i2c_bus_);
+        app_imu_init(i2c_bus_handle_);
     }
 
     void InitializeADC() {
