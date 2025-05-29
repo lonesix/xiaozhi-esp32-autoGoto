@@ -19,6 +19,7 @@
 #include "esp_timer.h"
 #include "led/circular_strip.h"
 
+#include "imu_bmi270.h"
 #define TAG "esp_spot_s3"
 
 bool button_released_ = false;
@@ -39,6 +40,7 @@ private:
     static const int64_t LONG_PRESS_TIMEOUT_US = 5 * 1000000ULL;
 
     void InitializeI2c() {
+
         // Initialize I2C peripheral
         i2c_master_bus_config_t i2c_bus_cfg = {
             .i2c_port = I2C_NUM_0,
@@ -53,6 +55,18 @@ private:
             },
         };
         ESP_ERROR_CHECK(i2c_new_master_bus(&i2c_bus_cfg, &i2c_bus_));
+
+        i2c_config_t i2c_bus_conf = {
+            .mode = I2C_MODE_MASTER,
+            .sda_io_num = AUDIO_CODEC_I2C_SDA_PIN,
+            .scl_io_num = AUDIO_CODEC_I2C_SCL_PIN,
+            .sda_pullup_en = GPIO_PULLUP_ENABLE,
+            .scl_pullup_en = GPIO_PULLUP_ENABLE,
+            // .master.clk_speed = 400000
+        };
+        i2c_bus_handle_t i2c_bus_handle_ = i2c_bus_create(I2C_NUM_0, &i2c_bus_conf);
+
+        app_imu_init(i2c_bus_);
     }
 
     void InitializeADC() {
