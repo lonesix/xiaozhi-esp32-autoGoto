@@ -360,7 +360,7 @@ static bmi270_axis_t app_imu_read(void)
 //     }
 // }
 // 阈值定义
-#define ROLL_THRESHOLD          15.0f    // 翻滚阈值
+#define ROLL_THRESHOLD          10.0f    // 翻滚阈值
 #define FLIP_THRESHOLD          30.0f    // 快速翻滚阈值
 #define SHAKE_THRESHOLD         20.0f    // 摇晃阈值
 #define SHAKE_COUNT_THRESHOLD   3        // 摇晃次数阈值

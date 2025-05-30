@@ -96,7 +96,9 @@ public:
     void Reboot();
     void WakeWordInvoke(const std::string& wake_word);
     void PlaySound(const std::string_view& sound);
+
     bool CanEnterSleepMode();
+  
 
 private:
     Application();
@@ -123,6 +125,7 @@ private:
 #else
     bool realtime_chat_enabled_ = false;
 #endif
+    bool IsDisconnect_ = false;
     bool aborted_ = false;
     bool voice_detected_ = false;
     bool busy_decoding_audio_ = false;

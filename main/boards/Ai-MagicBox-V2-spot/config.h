@@ -11,6 +11,7 @@
 #define ML307_TX_PIN GPIO_NUM_48
 // #endif
 #define IMU_BMI270_IS_EXIST 1 // 1:exist 0:not exist
+#define TISHIYIN_IS_EXIST 1 // 1:exist 0:not exist
 enum SERVERCONNECTIONMETHOD{
     PROTOCOL_NONE = 0,
     PROTOCOL_MQTT,

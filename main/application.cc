@@ -285,6 +285,11 @@ void Application::ToggleChatState() {
     }
 
     if (device_state_ == kDeviceStateIdle) {
+#if TISHIYIN_IS_EXIST      
+        Alert("TiShi", "TiShi", "TiShi",Lang::Sounds::P3_SUCCESS);
+        vTaskDelay(pdMS_TO_TICKS(800));
+        background_task_->WaitForCompletion();
+#endif
         Schedule([this]() {
             SetDeviceState(kDeviceStateConnecting);
             if (!protocol_->OpenAudioChannel()) {
@@ -294,6 +299,7 @@ void Application::ToggleChatState() {
             SetListeningMode(realtime_chat_enabled_ ? kListeningModeRealtime : kListeningModeAutoStop);
         });
     } else if (device_state_ == kDeviceStateSpeaking) {
+        
         Schedule([this]() {
             AbortSpeaking(kAbortReasonNone);
         });
@@ -475,9 +481,25 @@ void Application::Start() {
     protocol_->OnAudioChannelClosed([this, &board]() {
         board.SetPowerSaveMode(true);
         Schedule([this]() {
+            bool isAlert = true;
+            if (device_state_ == kDeviceStateIdle)
+            {
+                isAlert = false;
+            }
+            
             auto display = Board::GetInstance().GetDisplay();
             display->SetChatMessage("system", "");
             SetDeviceState(kDeviceStateIdle);
+            if (isAlert)
+            {
+                ResetDecoder();
+                        
+                Alert("TiShi", "TiShi", "TiShi",Lang::Sounds::P3_LOW_BATTERY);
+                vTaskDelay(pdMS_TO_TICKS(800));
+                background_task_->WaitForCompletion();
+            }
+            
+
         });
     });
     protocol_->OnIncomingJson([this, display](const cJSON* root) {
@@ -494,6 +516,26 @@ void Application::Start() {
                     }
                 });
             } else if (strcmp(state->valuestring, "stop") == 0) {
+#if TISHIYIN_IS_EXIST
+                if (aborted_ ==true)
+                {
+                    // Schedule([this](){
+                        aborted_ = false;
+                        ResetDecoder();
+                        
+                        Alert("TiShi", "TiShi", "TiShi",Lang::Sounds::P3_SUCCESS);
+                        vTaskDelay(pdMS_TO_TICKS(800));
+                        background_task_->WaitForCompletion();
+
+                }else if(IsDisconnect_!= true){
+                    vTaskDelay(pdMS_TO_TICKS(500));
+                    ResetDecoder();
+                    Alert("TiShi", "TiShi", "TiShi",Lang::Sounds::P3_SUCCESS);
+                    vTaskDelay(pdMS_TO_TICKS(800));
+                    background_task_->WaitForCompletion();
+                }
+#endif
+
                 Schedule([this]() {
                     background_task_->WaitForCompletion();
                     if (device_state_ == kDeviceStateSpeaking) {
@@ -641,6 +683,17 @@ void Application::Start() {
 #if CONFIG_USE_WAKE_WORD_DETECT
     wake_word_detect_.Initialize(codec);
     wake_word_detect_.OnWakeWordDetected([this](const std::string& wake_word) {
+    #if TISHIYIN_IS_EXIST
+        if (device_state_ == kDeviceStateIdle) {
+
+
+            ResetDecoder();
+            vTaskDelay(pdMS_TO_TICKS(300));
+            background_task_->WaitForCompletion();
+            Alert("TiShi", "TiShi", "TiShi",Lang::Sounds::P3_SUCCESS);
+            // vTaskDelay(pdMS_TO_TICKS(250));
+        }
+    #endif
         Schedule([this, &wake_word]() {
             if (device_state_ == kDeviceStateIdle) {
                 SetDeviceState(kDeviceStateConnecting);
