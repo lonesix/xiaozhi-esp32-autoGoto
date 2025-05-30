@@ -481,15 +481,17 @@ void Application::Start() {
     protocol_->OnAudioChannelClosed([this, &board]() {
         board.SetPowerSaveMode(true);
         Schedule([this]() {
+            #if TISHIYIN_IS_EXIST
             bool isAlert = true;
             if (device_state_ == kDeviceStateIdle)
             {
                 isAlert = false;
             }
-            
+            #endif
             auto display = Board::GetInstance().GetDisplay();
             display->SetChatMessage("system", "");
             SetDeviceState(kDeviceStateIdle);
+            #if TISHIYIN_IS_EXIST
             if (isAlert)
             {
                 ResetDecoder();
@@ -498,7 +500,7 @@ void Application::Start() {
                 vTaskDelay(pdMS_TO_TICKS(800));
                 background_task_->WaitForCompletion();
             }
-            
+            #endif
 
         });
     });
