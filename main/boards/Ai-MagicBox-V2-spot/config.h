@@ -10,14 +10,14 @@
 #define ML307_RX_PIN GPIO_NUM_47
 #define ML307_TX_PIN GPIO_NUM_48
 // #endif
-
+#define IMU_BMI270_IS_EXIST 1 // 1:exist 0:not exist
 enum SERVERCONNECTIONMETHOD{
     PROTOCOL_NONE = 0,
     PROTOCOL_MQTT,
     PROTOCOL_WEBSOCKET_XIAOZHI,
     PROTOCOL_WEBSOCKET_QJG,
 };
-#define ServerConnectionMethod  PROTOCOL_MQTT
+#define ServerConnectionMethod  PROTOCOL_MQTT //选择服务器连接方式
 #define QJG_WS_SERVER_OPTIONS  (PROTOCOL_WEBSOCKET_QJG == ServerConnectionMethod)? 1:0
 #define CHANGE_WS_SERVER_URL  (CONFIG_BOARD_TYPE_AI_MAGIC_BOX_V2_SPOT && (ServerConnectionMethod == PROTOCOL_WEBSOCKET_QJG))? 1:0
 

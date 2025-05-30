@@ -55,7 +55,7 @@ private:
             },
         };
         ESP_ERROR_CHECK(i2c_new_master_bus(&i2c_bus_cfg, &i2c_bus_));
-
+#if IMU_BMI270_IS_EXIST
         i2c_config_t i2c_bus_conf = {
             .mode = I2C_MODE_MASTER,
             .sda_io_num = AUDIO_CODEC_I2C_SDA_PIN,
@@ -67,6 +67,8 @@ private:
         i2c_bus_handle_t i2c_bus_handle_ = i2c_bus_create(I2C_NUM_0, &i2c_bus_conf);
 
         app_imu_init(i2c_bus_handle_);
+
+#endif
     }
 
     void InitializeADC() {
