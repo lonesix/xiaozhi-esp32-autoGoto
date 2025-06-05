@@ -35,10 +35,57 @@ Button::Button(gpio_num_t gpio_num, bool active_high, uint16_t long_press_time, 
     ESP_ERROR_CHECK(iot_button_new_gpio_device(&button_config, &gpio_config, &button_handle_));
 }
 
+Button::Button(bool active_high , gpio_num_t gpio_num, bool wakeup_enable, uint16_t long_press_time, uint16_t short_press_time)
+{
+    if (gpio_num == GPIO_NUM_NC) {
+        return;
+    }
+    button_config_t button_config = {
+        .long_press_time = long_press_time,
+        .short_press_time = short_press_time
+    };
+    button_gpio_config_t gpio_config = {
+        .gpio_num = gpio_num,
+        .active_level = static_cast<uint8_t>(active_high ? 1 : 0),
+        .enable_power_save = wakeup_enable,
+        .disable_pull = false
+    };
+    ESP_LOGE(TAG, "enable_power_save:%d",gpio_config.enable_power_save);
+    ESP_ERROR_CHECK(iot_button_new_gpio_device(&button_config, &gpio_config, &button_handle_));
+}
+
 Button::~Button() {
     if (button_handle_ != NULL) {
         iot_button_delete(button_handle_);
+        button_handle_ = nullptr;
     }
+}
+
+void Button::Destroy()
+{
+    if (button_handle_ != NULL) {
+        iot_button_delete(button_handle_);
+        button_handle_ = nullptr;
+    }
+}
+
+void Button::Reset(bool active_high, gpio_num_t gpio_num, bool wakeup_enable, uint16_t long_press_time, uint16_t short_press_time)
+{
+    if (gpio_num == GPIO_NUM_NC) {
+        return;
+    }
+    button_config_t button_config = {
+        .long_press_time = long_press_time,
+        .short_press_time = short_press_time
+    };
+    button_gpio_config_t gpio_config = {
+        .gpio_num = gpio_num,
+        .active_level = static_cast<uint8_t>(active_high ? 1 : 0),
+        .enable_power_save = wakeup_enable,
+        .disable_pull = false
+    };
+    ESP_LOGE(TAG, "enable_power_save:%d",gpio_config.enable_power_save);
+    ESP_ERROR_CHECK(iot_button_new_gpio_device(&button_config, &gpio_config, &button_handle_));
 }
 
 void Button::OnPressDown(std::function<void()> callback) {

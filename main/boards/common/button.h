@@ -12,7 +12,11 @@ class Button {
 public:
     Button(button_handle_t button_handle);
     Button(gpio_num_t gpio_num, bool active_high = false, uint16_t long_press_time = 0, uint16_t short_press_time = 0);
+    Button(bool active_high , gpio_num_t gpio_num,bool wakeup_enable = false,  uint16_t long_press_time = 0, uint16_t short_press_time = 0);
     ~Button();
+
+    void Destroy();
+    void Reset(bool active_high , gpio_num_t gpio_num,bool wakeup_enable = false,  uint16_t long_press_time = 0, uint16_t short_press_time = 0);
 
     void OnPressDown(std::function<void()> callback);
     void OnPressUp(std::function<void()> callback);

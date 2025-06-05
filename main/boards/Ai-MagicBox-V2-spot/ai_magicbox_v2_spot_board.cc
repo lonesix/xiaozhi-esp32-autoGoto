@@ -14,13 +14,16 @@
 #include "esp_adc/adc_oneshot.h"
 #include "esp_adc/adc_cali.h"
 #include "esp_adc/adc_cali_scheme.h"
+#include <math.h>
 
 #include <driver/gpio.h>
 #include "esp_timer.h"
 #include "led/circular_strip.h"
-
+#include "power_manager.h"
+#include "esp_sleep.h"
+#include "driver/rtc_io.h"
 #include "imu_bmi270.h"
-#define TAG "esp_spot_s3"
+#define TAG "Ai-MagicBox-V2-spot"
 
 bool button_released_ = false;
 bool shutdown_ready_ = false;
@@ -39,6 +42,94 @@ private:
     int64_t last_key_press_time = 0;
     static const int64_t LONG_PRESS_TIMEOUT_US = 5 * 1000000ULL;
 
+    void setupPowerManagement() {
+        if (!SLEEP_MODE_IS_EXIST) {
+                    return;
+        }
+        auto& power = PowerManager::getInstance();
+        
+        // 基本配置
+        PowerManager::Config config{
+            // .wakeup_gpio = GPIO_NUM_0,
+
+            .light_sleep_delay_ms = 10*1000,   // 10秒
+            .deep_sleep_delay_ms = 40*1000,    // 1分钟
+            .auto_sleep_enable = true
+        };
+
+        if (power.init(config) != PowerManager::Error::OK) {
+            ESP_LOGE(TAG, "Power management init failed");
+            return;
+        }
+        
+        // 设置回调
+        power.setPreSleepCallback([this](PowerManager::PowerMode mode) {
+            onPreSleep(mode);
+        });
+        
+        power.setPostWakeupCallback([this](PowerManager::PowerMode mode) {
+            onPostWakeup(mode);
+        });
+
+        // 7. 在系统活动时重置计时器
+        // 例如：在按键事件、传感器数据更新等事件中调用
+        power.resetInactiveTimer();
+
+        // 8. 如果需要禁用自动睡眠
+        // power.enableAutoSleep(false);
+
+        // 9. 手动控制睡眠（如果需要）
+        // if (some_condition) {
+        //     power.enterLightSleep();
+        // }
+
+        // 10. 在特定条件下进入深度睡眠
+        // if (battery_very_low) {
+        //     power.enterDeepSleep();  // 注意：此函数不会返回
+        // }
+    }
+
+    void onPreSleep(PowerManager::PowerMode mode) {
+        // 保存状态
+        ESP_LOGI(TAG, "Preparing to enter %s mode",
+            mode == PowerManager::PowerMode::LIGHT_SLEEP ? "light sleep" :
+            mode == PowerManager::PowerMode::DEEP_SLEEP ? "deep sleep" : "normal");
+        if (mode == PowerManager::PowerMode::DEEP_SLEEP)
+        {
+            // 注销keyButton，注册RTC唤醒源
+            rtc_gpio_pulldown_en(KEY_BUTTON_GPIO);
+            key_button_.Destroy();
+            // 配置 EXT0 唤醒
+            esp_sleep_enable_ext0_wakeup(GPIO_NUM_12, 1); // GPIO12 高电平触发唤醒
+            gpio_hold_dis(PERP_VCC_CTL);
+            gpio_set_level(PERP_VCC_CTL, 0);
+            gpio_hold_en(PERP_VCC_CTL);
+        }
+        
+            
+        // 停止定时器
+        // 关闭外设
+
+    }
+
+    void onPostWakeup(PowerManager::PowerMode mode) {
+        // 恢复状态
+        ESP_LOGI(TAG, "Waking up to %s mode",
+            mode == PowerManager::PowerMode::NORMAL ? "normal" :
+            mode == PowerManager::PowerMode::LIGHT_SLEEP ? "light sleep" : "deep sleep");
+        // rtc_gpio_deinit(KEY_BUTTON_GPIO) ;
+        // key_button_.Reset(true,KEY_BUTTON_GPIO, true);
+        // InitializeButtons();
+            // 重启定时器
+        // auto& power = PowerManager::getInstance();
+        POWER_MANAGER.resetInactiveTimer();
+        // 初始化外设
+    }
+
+    void onEvent() {
+        // 在任何用户活动或重要事件发生时
+        POWER_MANAGER.resetInactiveTimer();
+    }
     void InitializeI2c() {
 
         // Initialize I2C peripheral
@@ -160,11 +251,13 @@ private:
     }
 
     void InitializePowerCtl() {
+        rtc_gpio_deinit(KEY_BUTTON_GPIO) ;
         InitializeGPIO();
 
         gpio_set_level(MCU_VCC_CTL, 1);
         gpio_hold_en(MCU_VCC_CTL);
 
+        gpio_hold_dis(PERP_VCC_CTL);
         gpio_set_level(PERP_VCC_CTL, 1);
         gpio_hold_en(PERP_VCC_CTL);
     }
@@ -234,11 +327,15 @@ private:
 
 public:
     //NET_IS_WIFI_OR_ML307 在config.h中定义
-    AiMagicBoxV2SpotBoard() : DualNetworkBoard(ML307_TX_PIN, ML307_RX_PIN, 4096,NET_IS_WIFI_OR_ML307),boot_button_(BOOT_BUTTON_GPIO), key_button_(KEY_BUTTON_GPIO, true),External_voice_wake_up_(EXTERNAL_VOICE_WAKE_UP_GPIO,true) {
+    AiMagicBoxV2SpotBoard() : DualNetworkBoard(ML307_TX_PIN, ML307_RX_PIN, 4096,NET_IS_WIFI_OR_ML307),
+                              boot_button_(false,BOOT_BUTTON_GPIO,false), 
+                              key_button_(true,KEY_BUTTON_GPIO, true),
+                              External_voice_wake_up_(true,EXTERNAL_VOICE_WAKE_UP_GPIO,false) {
         InitializePowerCtl();
         InitializeADC();
         InitializeI2c();
         InitializeButtons();
+        setupPowerManagement();
         InitializeIot();
     }
     // EspSpotS3Bot() : boot_button_(BOOT_BUTTON_GPIO), key_button_(KEY_BUTTON_GPIO, true) {
