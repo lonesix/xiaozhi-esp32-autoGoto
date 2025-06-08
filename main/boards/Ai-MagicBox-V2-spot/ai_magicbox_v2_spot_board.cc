@@ -35,6 +35,7 @@ private:
     Button boot_button_;
     Button key_button_;
     Button External_voice_wake_up_;
+    Button wai_key_button_;
     adc_oneshot_unit_handle_t adc1_handle;
     adc_cali_handle_t adc1_cali_handle;
     bool do_calibration = false;
@@ -52,8 +53,8 @@ private:
         PowerManager::Config config{
             // .wakeup_gpio = GPIO_NUM_0,
 
-            .light_sleep_delay_ms = 10*1000,   // 10秒
-            .deep_sleep_delay_ms = 40*1000,    // 1分钟
+            .light_sleep_delay_ms = 30*1000,   // 10秒
+            .deep_sleep_delay_ms = 60*1000,    // 1分钟
             .auto_sleep_enable = true
         };
 
@@ -97,10 +98,21 @@ private:
         if (mode == PowerManager::PowerMode::DEEP_SLEEP)
         {
             // 注销keyButton，注册RTC唤醒源
-            rtc_gpio_pulldown_en(KEY_BUTTON_GPIO);
             key_button_.Destroy();
+            rtc_gpio_pullup_dis(KEY_BUTTON_GPIO);
+            rtc_gpio_pulldown_en(KEY_BUTTON_GPIO);
+            // 注册外围按键，注册RTC唤醒源
+            wai_key_button_.Destroy();
+            rtc_gpio_pullup_en(WAI_KEY_GPIO);
+            rtc_gpio_pulldown_dis(WAI_KEY_GPIO);
+            
             // 配置 EXT0 唤醒
-            esp_sleep_enable_ext0_wakeup(GPIO_NUM_12, 1); // GPIO12 高电平触发唤醒
+            esp_sleep_enable_ext0_wakeup(WAI_KEY_GPIO, 0); // GPIO12 高电平触发唤醒
+            // 配置 EXT1 唤醒
+            uint64_t mask = imu_interrupt_wake_Init();
+            mask |= 1ULL << KEY_BUTTON_GPIO;
+            esp_sleep_enable_ext1_wakeup(mask, ESP_EXT1_WAKEUP_ANY_HIGH);  // 任意引脚高电平触发唤醒
+            
             gpio_hold_dis(PERP_VCC_CTL);
             gpio_set_level(PERP_VCC_CTL, 0);
             gpio_hold_en(PERP_VCC_CTL);
@@ -117,13 +129,31 @@ private:
         ESP_LOGI(TAG, "Waking up to %s mode",
             mode == PowerManager::PowerMode::NORMAL ? "normal" :
             mode == PowerManager::PowerMode::LIGHT_SLEEP ? "light sleep" : "deep sleep");
-        // rtc_gpio_deinit(KEY_BUTTON_GPIO) ;
-        // key_button_.Reset(true,KEY_BUTTON_GPIO, true);
-        // InitializeButtons();
+
+        // 仅在light sleep模式下检查唤醒原因
+        if (mode == PowerManager::PowerMode::LIGHT_SLEEP) {
+            esp_sleep_wakeup_cause_t wakeup_cause = esp_sleep_get_wakeup_cause();
+            switch (wakeup_cause) {
+                case ESP_SLEEP_WAKEUP_TIMER:
+                    ESP_LOGI(TAG, "Wakeup caused by timer");
+                    break;
+                case ESP_SLEEP_WAKEUP_GPIO:
+                    ESP_LOGI(TAG, "Wakeup caused by GPIO");
+                    break;
+                default:
+                    ESP_LOGI(TAG, "Wakeup caused by other reason: %d", wakeup_cause);
+                    break;
+            }
+        }else if (mode == PowerManager::PowerMode::DEEP_SLEEP)
+        {
+            // rtc_gpio_deinit(KEY_BUTTON_GPIO) ;
+            // key_button_.Reset(true,KEY_BUTTON_GPIO, true);
+            // InitializeButtons();
             // 重启定时器
-        // auto& power = PowerManager::getInstance();
+            // auto& power = PowerManager::getInstance();
+        }
+        
         POWER_MANAGER.resetInactiveTimer();
-        // 初始化外设
     }
 
     void onEvent() {
@@ -157,7 +187,7 @@ private:
         };
         i2c_bus_handle_t i2c_bus_handle_ = i2c_bus_create(I2C_NUM_0, &i2c_bus_conf);
 
-        app_imu_init(i2c_bus_handle_);
+        app_imu_init(i2c_bus_handle_,IMU_BMI270_INT_PIN);
 
 #endif
     }
@@ -216,7 +246,17 @@ private:
             }
             app.ToggleChatState();
         });
-
+        wai_key_button_.OnClick([this]() {
+            auto& app = Application::GetInstance();
+            if (GetNetworkType() == NetworkType::WIFI) {
+                if (app.GetDeviceState() == kDeviceStateStarting && !WifiStation::GetInstance().IsConnected()) {
+                    // cast to WifiBoard
+                    auto& wifi_board = static_cast<WifiBoard&>(GetCurrentBoard());
+                    wifi_board.ResetWifiConfiguration();
+                }
+            }
+            app.ToggleChatState(); 
+        });
         key_button_.OnClick([this]() {
             auto& app = Application::GetInstance();
             app.ToggleChatState();
@@ -248,10 +288,36 @@ private:
                 BlinkGreenFor5s();
             }
         });
+        wai_key_button_.OnLongPress([this]() {
+            int64_t now = esp_timer_get_time();
+            auto* led = static_cast<CircularStrip*>(this->GetLed());
+
+            if (key_long_pressed) {
+                if ((now - last_key_press_time) < LONG_PRESS_TIMEOUT_US) {
+                    ESP_LOGW(TAG, "Key button long pressed the second time within 5s, shutting down...");
+                    led->SetSingleColor(0, {0, 0, 0});
+
+                    gpio_hold_dis(MCU_VCC_CTL);
+                    gpio_set_level(MCU_VCC_CTL, 0);
+
+                } else {
+                    last_key_press_time = now;
+                    BlinkGreenFor5s();
+                }
+                key_long_pressed = true;
+            } else {
+                ESP_LOGW(TAG, "Key button first long press! Waiting second within 5s to shutdown...");
+                last_key_press_time = now;
+                key_long_pressed = true;
+
+                BlinkGreenFor5s();
+            }
+        });
     }
 
     void InitializePowerCtl() {
         rtc_gpio_deinit(KEY_BUTTON_GPIO) ;
+        rtc_gpio_deinit(WAI_KEY_GPIO) ;
         InitializeGPIO();
 
         gpio_set_level(MCU_VCC_CTL, 1);
@@ -330,7 +396,8 @@ public:
     AiMagicBoxV2SpotBoard() : DualNetworkBoard(ML307_TX_PIN, ML307_RX_PIN, 4096,NET_IS_WIFI_OR_ML307),
                               boot_button_(false,BOOT_BUTTON_GPIO,false), 
                               key_button_(true,KEY_BUTTON_GPIO, true),
-                              External_voice_wake_up_(true,EXTERNAL_VOICE_WAKE_UP_GPIO,false) {
+                              External_voice_wake_up_(true,EXTERNAL_VOICE_WAKE_UP_GPIO,false),
+                              wai_key_button_(false,WAI_KEY_GPIO, false){
         InitializePowerCtl();
         InitializeADC();
         InitializeI2c();

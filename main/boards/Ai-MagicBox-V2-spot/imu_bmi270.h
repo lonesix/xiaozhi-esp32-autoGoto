@@ -24,8 +24,8 @@ typedef struct {
     float yaw;
     float roll;
 } bmi270_axis_t;
-void app_imu_init(i2c_bus_handle_t i2c_bus_handle);
-
+void app_imu_init(i2c_bus_handle_t i2c_bus_handle,gpio_num_t  imu_int_pin);
+uint64_t imu_interrupt_wake_Init();
 #ifdef __cplusplus
 }
 #endif

@@ -19,7 +19,7 @@
 #include "imu_bmi270.h"
 #include "imu_datafusion.h"
 #include "bmi270.h"
-
+#include "driver/rtc_io.h"
 #include "common/common.h"
 // #include "ui.h"
 
@@ -41,7 +41,7 @@ static bool gesup_sentalready = false;
 static bool gesdown_sentalready = false;
 static bmi270_handle_t bmi_handle = NULL;
 static bmi270_axis_t axis_last_val = {0.0f, 0.0f, 0.0f};
-
+static gpio_num_t bmi270_int1_gpio = GPIO_NUM_NC;
 static void i2c_sensor_bmi270_init(i2c_bus_handle_t i2c_bus_handle)
 {
     // i2c_bus_handle_t i2c_bus_handle = bsp_i2c_get_handle();
@@ -191,8 +191,8 @@ static int8_t set_accel_gyro_config(struct bmi2_dev *bmi)
     rslt = bmi2_get_sensor_config(config, 2, bmi);
     bmi2_error_codes_print_result(rslt);
 
-    rslt = bmi2_map_data_int(BMI2_DRDY_INT, BMI2_INT1, bmi);
-    bmi2_error_codes_print_result(rslt);
+    // rslt = bmi2_map_data_int(BMI2_DRDY_INT, BMI2_INT1, bmi);
+    // bmi2_error_codes_print_result(rslt);
 
     if (rslt == BMI2_OK) {
 
@@ -500,6 +500,128 @@ static void imu_check_offset(bmi270_axis_t axis_offset)
     }
 }
 
+/*!
+ * @brief This internal API is used to set configurations for any-motion.
+ */
+static int8_t set_feature_config(struct bmi2_dev *bmi2_dev)
+{
+
+    /* Status of api are returned to this variable. */
+    int8_t rslt;
+
+    /* Structure to define the type of sensor and its configurations. */
+    struct bmi2_sens_config config;
+
+    /* Configure the type of feature. */
+    config.type = BMI2_ANY_MOTION;
+
+    struct bmi2_int_pin_config pin_config = {0}; // 添加中断引脚配置
+    /* Get default configurations for the type of feature selected. */
+    rslt = bmi270_get_sensor_config(&config, 1, bmi2_dev);
+    bmi2_error_codes_print_result(rslt);
+    if (rslt == BMI2_OK)
+    {
+        /* NOTE: The user can change the following configuration parameters according to their requirement. */
+        /* 1LSB equals 20ms. Default is 100ms, setting to 80ms. */
+        config.cfg.any_motion.duration = 0x04;
+
+        /* 1LSB equals to 0.48mg. Default is 83mg, setting to 50mg. */
+        config.cfg.any_motion.threshold = 0x68;
+
+        /* Set new configurations. */
+        rslt = bmi270_set_sensor_config(&config, 1, bmi2_dev);
+        bmi2_error_codes_print_result(rslt);
+        if (rslt == BMI2_OK)
+        {
+            // 【关键】配置BMI270的中断引脚电气特性
+            rslt = bmi2_get_int_pin_config(&pin_config, bmi2_dev);
+            if (rslt == BMI2_OK)
+            {
+                pin_config.pin_type = BMI2_INT1;
+                pin_config.pin_cfg[0].input_en = BMI2_INT_INPUT_DISABLE;
+                pin_config.pin_cfg[0].lvl = BMI2_INT_ACTIVE_HIGH;        // 高电平有效
+                pin_config.pin_cfg[0].od = BMI2_INT_PUSH_PULL;           // 推挽输出
+                pin_config.pin_cfg[0].output_en = BMI2_INT_OUTPUT_ENABLE;
+                pin_config.int_latch = BMI2_INT_NON_LATCH;               // 非锁存模式
+                
+                rslt = bmi2_set_int_pin_config(&pin_config, bmi2_dev);
+                bmi2_error_codes_print_result(rslt);
+            }
+        }
+    }
+
+    return rslt;
+}
+
+//return mask
+uint64_t imu_interrupt_wake_Init()
+{
+    if (bmi_handle == NULL)
+    {
+        return 0;
+    }
+    /* Accel sensor and any-motion feature are listed in array. */
+    uint8_t sens_list[2] = {  BMI2_ANY_MOTION };
+
+    /* Enable the selected sensors. */
+    int8_t rslt = bmi270_sensor_enable(sens_list, 1, bmi_handle);
+    bmi2_error_codes_print_result(rslt);
+    
+    /* Set feature configurations for any-motion. */
+    rslt = set_feature_config(bmi_handle);
+    bmi2_error_codes_print_result(rslt);
+
+    struct bmi2_sens_int_config sens_int = {
+        .type = BMI2_ANY_MOTION,    // 中断类型
+        .hw_int_pin = BMI2_INT1     // 硬件中断引脚(INT1或INT2)
+    };
+
+    // 将任意运动检测中断映射到INT1引脚
+    rslt = bmi270_map_feat_int(&sens_int, 1,bmi_handle);
+    bmi2_error_codes_print_result(rslt);
+
+    // 【关键】配置ESP32的GPIO引脚
+    gpio_config_t io_int = {
+        .pin_bit_mask = (1ULL << bmi270_int1_gpio),
+        .mode = GPIO_MODE_INPUT,
+        .pull_up_en = GPIO_PULLUP_DISABLE,
+        .pull_down_en = GPIO_PULLDOWN_ENABLE,    // 根据BMI270配置调整
+        .intr_type = GPIO_INTR_DISABLE
+    };
+    gpio_config(&io_int);
+    // rtc（睡眠唤醒）
+    // 注册RTC唤醒源
+    rtc_gpio_pulldown_en(bmi270_int1_gpio);
+
+    // 配置 EXT1 唤醒
+    uint64_t mask =  (1ULL << bmi270_int1_gpio); //| (1ULL << GPIO_NUM_12) ; // GPIO12 和 GPIO13
+    return mask;
+
+}
+
+void imu_interrupt_wake_deInit()
+{
+    /* Variable to get any-motion interrupt status. */
+    uint16_t int_status = 0;
+    /* To get the interrupt status of any-motion. */
+    int8_t rslt = bmi2_get_int_status(&int_status, bmi_handle);
+    bmi2_error_codes_print_result(rslt);
+
+    /* To check the interrupt status of any-motion. */
+    if (int_status & BMI270_ANY_MOT_STATUS_MASK)
+    {
+        printf("Any-motion interrupt is generated\n");
+        
+    }
+
+    /* Accel sensor and any-motion feature are listed in array. */
+    uint8_t sens_list[1] = {  BMI2_ANY_MOTION };
+
+    /* Enable the selected sensors. */
+    rslt = bmi270_sensor_disable(sens_list, 1, bmi_handle);
+    bmi2_error_codes_print_result(rslt);
+}
+
 static void app_imu_task(void *arg)
 {
     while (1) {
@@ -517,10 +639,12 @@ static void app_imu_task(void *arg)
     vTaskDelete(NULL);
 }
 
-void app_imu_init(i2c_bus_handle_t i2c_bus_handle)
+void app_imu_init(i2c_bus_handle_t i2c_bus_handle,gpio_num_t  imu_int_pin)
 {
+    bmi270_int1_gpio = imu_int_pin;
     i2c_sensor_bmi270_init(i2c_bus_handle);
     bmi270_enable_accel_gyro(bmi_handle);
+    imu_interrupt_wake_deInit();
     BaseType_t res;
 
     res = xTaskCreate(app_imu_task, "imu task", 4 * 1024, NULL, 5, NULL);
