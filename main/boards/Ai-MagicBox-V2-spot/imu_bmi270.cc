@@ -34,6 +34,7 @@ static const char *TAG = "imu";
 #define GYRO                UINT8_C(0x01)
 
 #define FILTER_ALPHA 0.5f
+#define IMU_THRESHOLD 4.5f
 #define TRIGGER_THRESHOLD      4.5f            //deg
 static bool gesright_sentalready = false;
 static bool gesleft_sentalready = false;
@@ -482,11 +483,16 @@ static void imu_check_offset(bmi270_axis_t axis_offset)
         shake_sentalready = false;
         shake_count = 0;
     }
+    bool roll_exceeded = fabs(axis_offset.roll) > IMU_THRESHOLD;
+    bool pitch_exceeded = fabs(axis_offset.pitch) > IMU_THRESHOLD;
+    bool yaw_exceeded = fabs(axis_offset.yaw) > IMU_THRESHOLD;
     
+    // 计算超过阈值的轴数量
+    int exceeded_count = roll_exceeded + pitch_exceeded + yaw_exceeded;
     // 组合动作检测（例如：同时检测到翻滚和偏航）
-    if ((fabs(axis_offset.roll) > ROLL_THRESHOLD) && (fabs(axis_offset.yaw) > TRIGGER_THRESHOLD)) {
+    if (exceeded_count >= 2) {
         if (!combo_action_sentalready) {
-            ESP_LOGI(TAG, "combo action detected! roll: %5.2f, yaw: %5.2f", axis_offset.roll, axis_offset.yaw);
+            ESP_LOGI(TAG, "combo action detected! roll: %5.2f, yaw: %5.2f, pitch: %5.2f", axis_offset.roll, axis_offset.yaw, axis_offset.pitch);
             // 处理组合动作事件
             auto& app = Application::GetInstance();
             
