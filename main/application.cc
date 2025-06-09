@@ -414,7 +414,7 @@ void Application::Start() {
         mqtt,
         websocket
     }prior_ProtocolType = websocket;
-
+//defined(CONFIG_A) || defined(CONFIG_B)
 #if CONFIG_BOARD_TYPE_AI_MAGIC_BOX_V2_SPOT 
     switch (ServerConnectionMethod)//ServerConnectionMethod
     {
