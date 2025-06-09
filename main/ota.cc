@@ -20,8 +20,12 @@
 #include <algorithm>
 #if CONFIG_BOARD_TYPE_AI_MAGIC_BOX_V2_SPOT 
 #include "boards/Ai-MagicBox-V2-spot/config.h"
-// #include "config.h"
 #endif
+
+#if CONFIG_BOARD_TYPE_AI_MAGIC_BOX_V3_SPOT 
+#include "boards/Ai-MagicBox-V3-spot/config.h"
+#endif
+
 #define TAG "Ota"
 
 

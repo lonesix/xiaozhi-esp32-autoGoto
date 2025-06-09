@@ -162,6 +162,8 @@ choice BOARD_TYPE
         bool "征辰科技1.54(ML307)"
     config BOARD_TYPE_AI_MAGIC_BOX_V2_SPOT
         bool "AI魔盒V2_spot"        
+    config BOARD_TYPE_AI_MAGIC_BOX_V_SPOT
+        bool "AI魔盒V3_spot"      
 endchoice
 
 choice ESP_S3_LCD_EV_Board_Version_TYPE

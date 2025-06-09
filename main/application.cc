@@ -25,9 +25,10 @@
 
 #if CONFIG_BOARD_TYPE_AI_MAGIC_BOX_V2_SPOT 
 #include "boards/Ai-MagicBox-V2-spot/config.h"
-// #include "config.h"
 #endif
-
+#if CONFIG_BOARD_TYPE_AI_MAGIC_BOX_V3_SPOT 
+#include "boards/Ai-MagicBox-V3-spot/config.h"
+#endif
 #define TAG "Application"
 
 
@@ -414,8 +415,8 @@ void Application::Start() {
         mqtt,
         websocket
     }prior_ProtocolType = websocket;
-//defined(CONFIG_A) || defined(CONFIG_B)
-#if CONFIG_BOARD_TYPE_AI_MAGIC_BOX_V2_SPOT 
+//defined(CONFIG_BOARD_TYPE_AI_MAGIC_BOX_V2_SPOT) || defined(CONFIG_BOARD_TYPE_AI_MAGIC_BOX_V3_SPOT)
+#if defined(CONFIG_BOARD_TYPE_AI_MAGIC_BOX_V2_SPOT) || defined(CONFIG_BOARD_TYPE_AI_MAGIC_BOX_V3_SPOT) 
     switch (ServerConnectionMethod)//ServerConnectionMethod
     {
         case SERVERCONNECTIONMETHOD::PROTOCOL_NONE:

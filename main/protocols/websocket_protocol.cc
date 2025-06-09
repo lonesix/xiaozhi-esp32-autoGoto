@@ -13,6 +13,11 @@
 #include "boards/Ai-MagicBox-V2-spot/config.h"
 // #include "config.h"
 #endif
+
+#if CONFIG_BOARD_TYPE_AI_MAGIC_BOX_V3_SPOT 
+#include "boards/Ai-MagicBox-V3-spot/config.h"
+#endif
+
 #define TAG "WS"
 
 WebsocketProtocol::WebsocketProtocol() {
@@ -121,7 +126,7 @@ bool WebsocketProtocol::OpenAudioChannel() {
     }
     websocket_->SetHeader("Protocol-Version", std::to_string(version_).c_str());
     ESP_LOGI(TAG, "Protocol-Version: %d", version_);
-    #if CONFIG_BOARD_TYPE_AI_MAGIC_BOX_V2_SPOT 
+    #if defined(CONFIG_BOARD_TYPE_AI_MAGIC_BOX_V2_SPOT) || defined(CONFIG_BOARD_TYPE_AI_MAGIC_BOX_V3_SPOT) 
     websocket_->SetHeader("Device-Id", DEVICE_ID);
     ESP_LOGW(TAG, "Device-Id: %s", DEVICE_ID);
     #else

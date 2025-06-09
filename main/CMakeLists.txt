@@ -169,6 +169,8 @@ elseif(CONFIG_BOARD_TYPE_ZHENGCHEN_1_54TFT_ML307)
     set(BOARD_TYPE "zhengchen-1.54tft-ml307")
 elseif(CONFIG_BOARD_TYPE_AI_MAGIC_BOX_V2_SPOT)
     set(BOARD_TYPE "Ai-MagicBox-V2-spot")
+elseif(CONFIG_BOARD_TYPE_AI_MAGIC_BOX_V3_SPOT)
+    set(BOARD_TYPE "Ai-MagicBox-V3-spot")
 endif()
 file(GLOB BOARD_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/boards/${BOARD_TYPE}/*.cc
