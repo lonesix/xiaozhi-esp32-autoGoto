@@ -23,7 +23,7 @@
 #include "esp_sleep.h"
 #include "driver/rtc_io.h"
 #include "imu_bmi270.h"
-#define TAG "Ai-MagicBox-V2-spot"
+#define TAG "Ai-MagicBox-V3-spot"
 
 bool button_released_ = false;
 bool shutdown_ready_ = false;

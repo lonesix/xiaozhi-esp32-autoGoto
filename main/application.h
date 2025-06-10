@@ -104,7 +104,7 @@ private:
     Application();
     ~Application();
 
-#if CONFIG_BOARD_TYPE_AI_MAGIC_BOX_V2_SPOT
+#if defined(CONFIG_BOARD_TYPE_AI_MAGIC_BOX_V2_SPOT) || defined(CONFIG_BOARD_TYPE_AI_MAGIC_BOX_V3_SPOT) 
     bool IsCloseConnect_ =false; //speaking的stop到来是否需要关闭连接
 #endif
 

@@ -16,7 +16,7 @@
 
 
 
-#define IMU_BMI270_INT_PIN GPIO_NUM_5
+
 enum SERVERCONNECTIONMETHOD{
     PROTOCOL_NONE = 0,
     PROTOCOL_MQTT,
@@ -25,7 +25,7 @@ enum SERVERCONNECTIONMETHOD{
 };
 #define ServerConnectionMethod  PROTOCOL_MQTT //选择服务器连接方式
 #define QJG_WS_SERVER_OPTIONS  (PROTOCOL_WEBSOCKET_QJG == ServerConnectionMethod)? 1:0
-#define CHANGE_WS_SERVER_URL  (CONFIG_BOARD_TYPE_AI_MAGIC_BOX_V2_SPOT && (ServerConnectionMethod == PROTOCOL_WEBSOCKET_QJG))? 1:0
+#define CHANGE_WS_SERVER_URL  (CONFIG_BOARD_TYPE_AI_MAGIC_BOX_V3_SPOT && (ServerConnectionMethod == PROTOCOL_WEBSOCKET_QJG))? 1:0
 
 #define QJG_WS_SERVER_URL "wss://aihub.nankai.edu.cn/terminal-server"
 
@@ -38,25 +38,27 @@ enum SERVERCONNECTIONMETHOD{
 #define AUDIO_INPUT_REFERENCE    false
 
 #define AUDIO_I2S_GPIO_MCLK      GPIO_NUM_NC
-#define AUDIO_I2S_GPIO_WS        GPIO_NUM_17
-#define AUDIO_I2S_GPIO_BCLK      GPIO_NUM_16
-#define AUDIO_I2S_GPIO_DIN       GPIO_NUM_15
-#define AUDIO_I2S_GPIO_DOUT      GPIO_NUM_18
+#define AUDIO_I2S_GPIO_WS        GPIO_NUM_6
+#define AUDIO_I2S_GPIO_BCLK      GPIO_NUM_4
+#define AUDIO_I2S_GPIO_DIN       GPIO_NUM_5
+#define AUDIO_I2S_GPIO_DOUT      GPIO_NUM_7
 
-#define AUDIO_CODEC_PA_PIN       GPIO_NUM_40
+#define AUDIO_CODEC_PA_PIN       GPIO_NUM_8
 #define AUDIO_CODEC_I2C_SDA_PIN  GPIO_NUM_2
 #define AUDIO_CODEC_I2C_SCL_PIN  GPIO_NUM_1
 #define AUDIO_CODEC_ES8311_ADDR  ES8311_CODEC_DEFAULT_ADDR
 
-#define EXTERNAL_VOICE_WAKE_UP_GPIO GPIO_NUM_8
+#define EXTERNAL_VOICE_WAKE_UP_GPIO GPIO_NUM_40
 #define BOOT_BUTTON_GPIO         GPIO_NUM_0
-#define KEY_BUTTON_GPIO          GPIO_NUM_12
-#define LED_PIN                  GPIO_NUM_11
-#define WAI_KEY_GPIO           GPIO_NUM_9
+#define KEY_BUTTON_GPIO          GPIO_NUM_11 //
+#define LED_PIN                  GPIO_NUM_3
+#define WAI_KEY_GPIO             GPIO_NUM_14
+#define VOLUME_BUTTON_GPIO       GPIO_NUM_10
+#define IMU_BMI270_INT_PIN       GPIO_NUM_13
 
 #define VBAT_ADC_CHANNEL         ADC_CHANNEL_9  // S3: IO10
-#define MCU_VCC_CTL              GPIO_NUM_4     // set 1 to power on MCU
-#define PERP_VCC_CTL             GPIO_NUM_6     // set 1 to power on peripherals
+#define MCU_VCC_CTL              GPIO_NUM_NC     // set 1 to power on MCU
+#define PERP_VCC_CTL             GPIO_NUM_15     // set 1 to power on peripherals
 
 #define ADC_ATTEN                ADC_ATTEN_DB_12
 #define ADC_WIDTH                ADC_BITWIDTH_DEFAULT
