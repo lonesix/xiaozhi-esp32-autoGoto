@@ -2,6 +2,11 @@
 #define _BOARD_CONFIG_H_
 
 #include <driver/gpio.h>
+#include "esp_vfs_fat.h"
+#include "sdmmc_cmd.h"
+#include "driver/sdmmc_host.h"
+#include "esp_vfs.h"
+#include <fstream>
 
 #define NET_IS_WIFI_OR_ML307 NET_IS_WIFI
 #define NET_IS_WIFI 0
@@ -65,4 +70,11 @@ enum SERVERCONNECTIONMETHOD{
 #define FULL_BATTERY_VOLTAGE     4100
 #define EMPTY_BATTERY_VOLTAGE    3200
 
+//SD卡
+#define BSP_SD_CLK          (GPIO_NUM_17)
+#define BSP_SD_CMD          (GPIO_NUM_18)
+#define BSP_SD_D0           (GPIO_NUM_16)
+#define MOUNT_POINT              "/sdcard"
+#define EXAMPLE_MAX_CHAR_SIZE    64
+#define AUDIO_FILE_EXTENSION    ".P3"
 #endif // _BOARD_CONFIG_H_

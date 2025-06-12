@@ -36,6 +36,9 @@ private:
     Button key_button_;
     Button External_voice_wake_up_;
     Button wai_key_button_;
+    // adc_oneshot_unit_handle_t volume_adc_button_handle;
+    // AdcButton volume_key_button_;
+    
     adc_oneshot_unit_handle_t adc1_handle;
     adc_cali_handle_t adc1_cali_handle;
     bool do_calibration = false;
@@ -97,10 +100,10 @@ private:
             mode == PowerManager::PowerMode::DEEP_SLEEP ? "deep sleep" : "normal");
         if (mode == PowerManager::PowerMode::DEEP_SLEEP)
         {
-            // 注销keyButton，注册RTC唤醒源
-            key_button_.Destroy();
-            rtc_gpio_pullup_dis(KEY_BUTTON_GPIO);
-            rtc_gpio_pulldown_en(KEY_BUTTON_GPIO);
+            // // 注销keyButton，注册RTC唤醒源
+            // key_button_.Destroy();
+            // rtc_gpio_pullup_dis(KEY_BUTTON_GPIO);
+            // rtc_gpio_pulldown_en(KEY_BUTTON_GPIO);
             // 注册外围按键，注册RTC唤醒源
             wai_key_button_.Destroy();
             rtc_gpio_pullup_en(WAI_KEY_GPIO);
@@ -110,7 +113,7 @@ private:
             esp_sleep_enable_ext0_wakeup(WAI_KEY_GPIO, 0); // GPIO12 高电平触发唤醒
             // 配置 EXT1 唤醒
             uint64_t mask = imu_interrupt_wake_Init();
-            mask |= 1ULL << KEY_BUTTON_GPIO;
+            // mask |= 1ULL << WAI_KEY_GPIO;
             esp_sleep_enable_ext1_wakeup(mask, ESP_EXT1_WAKEUP_ANY_HIGH);  // 任意引脚高电平触发唤醒
             
             gpio_hold_dis(PERP_VCC_CTL);
@@ -271,9 +274,11 @@ private:
                 if ((now - last_key_press_time) < LONG_PRESS_TIMEOUT_US) {
                     ESP_LOGW(TAG, "Key button long pressed the second time within 5s, shutting down...");
                     led->SetSingleColor(0, {0, 0, 0});
+                    if (MCU_VCC_CTL != GPIO_NUM_NC ){
+                        gpio_hold_dis(MCU_VCC_CTL);
+                        gpio_set_level(MCU_VCC_CTL, 0);
+                    }
 
-                    gpio_hold_dis(MCU_VCC_CTL);
-                    gpio_set_level(MCU_VCC_CTL, 0);
 
                 } else {
                     last_key_press_time = now;
@@ -296,9 +301,11 @@ private:
                 if ((now - last_key_press_time) < LONG_PRESS_TIMEOUT_US) {
                     ESP_LOGW(TAG, "Key button long pressed the second time within 5s, shutting down...");
                     led->SetSingleColor(0, {0, 0, 0});
+                    if (MCU_VCC_CTL != GPIO_NUM_NC ){
+                        gpio_hold_dis(MCU_VCC_CTL);
+                        gpio_set_level(MCU_VCC_CTL, 0);
+                    }
 
-                    gpio_hold_dis(MCU_VCC_CTL);
-                    gpio_set_level(MCU_VCC_CTL, 0);
 
                 } else {
                     last_key_press_time = now;
@@ -319,9 +326,11 @@ private:
         rtc_gpio_deinit(KEY_BUTTON_GPIO) ;
         rtc_gpio_deinit(WAI_KEY_GPIO) ;
         InitializeGPIO();
+        if (MCU_VCC_CTL != GPIO_NUM_NC ){
+            gpio_set_level(MCU_VCC_CTL, 1);
+            gpio_hold_en(MCU_VCC_CTL); 
+        }
 
-        gpio_set_level(MCU_VCC_CTL, 1);
-        gpio_hold_en(MCU_VCC_CTL);
 
         gpio_hold_dis(PERP_VCC_CTL);
         gpio_set_level(PERP_VCC_CTL, 1);
@@ -339,14 +348,19 @@ private:
         gpio_config(&io_pa);
         gpio_set_level(AUDIO_CODEC_PA_PIN, 0);
 
-        gpio_config_t io_conf_1 = {
-            .pin_bit_mask = (1ULL << MCU_VCC_CTL),
-            .mode = GPIO_MODE_OUTPUT,
-            .pull_up_en = GPIO_PULLUP_DISABLE,
-            .pull_down_en = GPIO_PULLDOWN_DISABLE,
-            .intr_type = GPIO_INTR_DISABLE
-        };
-        gpio_config(&io_conf_1);
+        if (MCU_VCC_CTL != GPIO_NUM_NC )
+        {
+            gpio_config_t io_conf_1 = {
+                .pin_bit_mask = (1ULL << MCU_VCC_CTL),
+                .mode = GPIO_MODE_OUTPUT,
+                .pull_up_en = GPIO_PULLUP_DISABLE,
+                .pull_down_en = GPIO_PULLDOWN_DISABLE,
+                .intr_type = GPIO_INTR_DISABLE
+            };
+            gpio_config(&io_conf_1);
+        }
+        
+
 
         gpio_config_t io_conf_2 = {
             .pin_bit_mask = (1ULL << PERP_VCC_CTL),
@@ -362,6 +376,7 @@ private:
         auto& thing_manager = iot::ThingManager::GetInstance();
         thing_manager.AddThing(iot::CreateThing("Speaker"));
         thing_manager.AddThing(iot::CreateThing("Battery"));
+        thing_manager.AddThing(iot::CreateThing("SdPlayer"));
     }
 
 
@@ -451,7 +466,7 @@ public:
         // 计算电量百分比
         level = (voltage - EMPTY_BATTERY_VOLTAGE) * 100 / (FULL_BATTERY_VOLTAGE - EMPTY_BATTERY_VOLTAGE);
 
-        charging = gpio_get_level(MCU_VCC_CTL);
+        // charging = gpio_get_level(MCU_VCC_CTL);
         ESP_LOGI(TAG, "Battery Level: %d%%, Charging: %s", level, charging ? "Yes" : "No");
         return true;
     }

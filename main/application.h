@@ -96,7 +96,10 @@ public:
     void Reboot();
     void WakeWordInvoke(const std::string& wake_word);
     void PlaySound(const std::string_view& sound);
-
+    #if CONFIG_BOARD_TYPE_AI_MAGIC_BOX_V3_SPOT 
+    void PlaySoundFromFile(const std::string& file_name);
+    void PlaySoundFromFile(int file_number);
+    #endif
     bool CanEnterSleepMode();
   
 

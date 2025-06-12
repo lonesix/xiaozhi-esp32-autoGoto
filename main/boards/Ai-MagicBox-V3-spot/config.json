@@ -1,0 +1,9 @@
+{
+    "target": "esp32s3",
+    "builds": [
+        {
+            "name": "Ai-MagicBox-V3-spot",
+            "sdkconfig_append": []
+        }
+    ]
+}
