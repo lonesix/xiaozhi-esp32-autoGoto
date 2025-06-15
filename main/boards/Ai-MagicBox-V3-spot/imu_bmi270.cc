@@ -43,6 +43,21 @@ static bool gesdown_sentalready = false;
 static bmi270_handle_t bmi_handle = NULL;
 static bmi270_axis_t axis_last_val = {0.0f, 0.0f, 0.0f};
 static gpio_num_t bmi270_int1_gpio = GPIO_NUM_NC;
+
+//注册回调函数
+void (*imu_callback)(void) = NULL;
+void app_imu_register_callback(void (*callback)(void))
+{
+    imu_callback = callback;
+}
+//调用回调函数
+static void app_imu_callback(void)
+{
+    if (imu_callback != NULL) {
+        imu_callback();
+    }
+}
+
 static void i2c_sensor_bmi270_init(i2c_bus_handle_t i2c_bus_handle)
 {
     // i2c_bus_handle_t i2c_bus_handle = bsp_i2c_get_handle();
@@ -504,6 +519,11 @@ static void imu_check_offset(bmi270_axis_t axis_offset)
             combo_action_sentalready = false;
         }
     }
+
+    //检测是否需要调用回调函数
+    if (fabs(axis_offset.roll) >=0.5f || fabs(axis_offset.pitch) >= 0.5f || fabs(axis_offset.yaw) >= 0.5f) {
+        app_imu_callback();
+    }
 }
 
 /*!
@@ -663,6 +683,7 @@ void app_imu_init(i2c_bus_handle_t i2c_bus_handle,gpio_num_t  imu_int_pin)
         ESP_LOGE(TAG, "Create imu task fail!");
     }
 }
+
 
 
 

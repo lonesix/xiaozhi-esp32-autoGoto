@@ -97,8 +97,25 @@ public:
     void WakeWordInvoke(const std::string& wake_word);
     void PlaySound(const std::string_view& sound);
     #if CONFIG_BOARD_TYPE_AI_MAGIC_BOX_V3_SPOT 
-    void PlaySoundFromFile(const std::string& file_name);
+    EventGroupHandle_t sdEvent_group_;
+    void WaitSoundToFinish();
+    void StopSpeaking();
+    void PlaySoundFromFile(const std::string &file_path_name);
+    void TiShiYin_V2();
     void PlaySoundFromFile(int file_number);
+    void SetSdEventHandle(EventGroupHandle_t event_group){sdEvent_group_ = event_group;}
+    const int SDPLAYERMONITOR_IDLE_BIT = BIT0;
+    const int SDPLAYERMONITOR_SPEAKINGTOSTOP_BIT = BIT1;
+    const int SDPLAYERMONITOR_SPEAKINGTOIOT_BIT = BIT2;
+    const int SDPLAYERMONITOR_SPEAKINGTOIOT_STR_BIT = BIT3;
+    const int SDPLAYERMONITOR_SPEAKINGTOIOT_NUM_BIT = BIT4;
+    void SetSdEventStop(){
+        if (sdEvent_group_ != NULL)
+        {
+            xEventGroupSetBits(sdEvent_group_, SDPLAYERMONITOR_SPEAKINGTOSTOP_BIT);
+            printf("SetSdEventStop\n");
+        }
+    }
     #endif
     bool CanEnterSleepMode();
   

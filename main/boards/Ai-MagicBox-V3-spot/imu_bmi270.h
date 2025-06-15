@@ -27,6 +27,7 @@ typedef struct {
 } bmi270_axis_t;
 void app_imu_init(i2c_bus_handle_t i2c_bus_handle,gpio_num_t  imu_int_pin);
 uint64_t imu_interrupt_wake_Init();
+void app_imu_register_callback(void (*callback)(void));
 #ifdef __cplusplus
 }
 #endif

@@ -23,8 +23,9 @@
 #include "esp_sleep.h"
 #include "driver/rtc_io.h"
 #include "imu_bmi270.h"
+#include "adcButton.h"
 #define TAG "Ai-MagicBox-V3-spot"
-
+const char* ADCButtonNetwork::TAG1 = "adc_button_network";
 bool button_released_ = false;
 bool shutdown_ready_ = false;
 esp_timer_handle_t shutdown_timer;
@@ -38,9 +39,11 @@ private:
     Button wai_key_button_;
     // adc_oneshot_unit_handle_t volume_adc_button_handle;
     // AdcButton volume_key_button_;
-    
+    ADCButtonNetwork* adc_button;
     adc_oneshot_unit_handle_t adc1_handle;
     adc_cali_handle_t adc1_cali_handle;
+    SemaphoreHandle_t adc_cali_mutex = nullptr;
+
     bool do_calibration = false;
     bool key_long_pressed = false;
     int64_t last_key_press_time = 0;
@@ -78,7 +81,10 @@ private:
         // 7. 在系统活动时重置计时器
         // 例如：在按键事件、传感器数据更新等事件中调用
         power.resetInactiveTimer();
-
+        //注册imu回调
+        app_imu_register_callback([]() {
+            PowerManager::getInstance().resetInactiveTimer();
+        });
         // 8. 如果需要禁用自动睡眠
         // power.enableAutoSleep(false);
 
@@ -112,9 +118,9 @@ private:
             // 配置 EXT0 唤醒
             esp_sleep_enable_ext0_wakeup(WAI_KEY_GPIO, 0); // GPIO12 高电平触发唤醒
             // 配置 EXT1 唤醒
-            uint64_t mask = imu_interrupt_wake_Init();
+            // uint64_t mask = imu_interrupt_wake_Init();
             // mask |= 1ULL << WAI_KEY_GPIO;
-            esp_sleep_enable_ext1_wakeup(mask, ESP_EXT1_WAKEUP_ANY_HIGH);  // 任意引脚高电平触发唤醒
+            // esp_sleep_enable_ext1_wakeup(mask, ESP_EXT1_WAKEUP_ANY_HIGH);  // 任意引脚高电平触发唤醒
             
             gpio_hold_dis(PERP_VCC_CTL);
             gpio_set_level(PERP_VCC_CTL, 0);
@@ -223,6 +229,52 @@ private:
             ESP_LOGI(TAG, "ADC Curve Fitting calibration succeeded");
         }
 #endif // ADC_CALI_SCHEME_CURVE_FITTING_SUPPORTED
+#ifdef VOLUME_BUTTON_CHANNEL
+
+    // ADC按键
+    const uint16_t thresholds[] = {
+
+        810, // 按键1的阈值
+        1570, // 按键2的阈值
+        2400, // 按键3的阈值
+
+    };
+    
+        size_t num_buttons = sizeof(thresholds) / sizeof(thresholds[0]);
+    
+        // 创建ADCButtonNetwork对象，并自动启动任务,
+        adc_button = new ADCButtonNetwork(adc1_handle,"ADCButtonTask",ADC_UNIT_1, VOLUME_BUTTON_CHANNEL, thresholds, num_buttons);
+        adc_button->registerCallback(0, [this]() { 
+            ESP_LOGI(ADCButtonNetwork::TAG1, "Button 1 Callback Executed");
+            // 在这里添加按钮1被按下时的处理逻辑
+            auto codec = GetAudioCodec();
+            auto volume = codec->output_volume() - 10;
+            if (volume < 0) {
+                volume = 0;
+            }
+            codec->SetOutputVolume(volume);
+
+            });
+        adc_button->registerCallback(1, []() {
+            ESP_LOGI(ADCButtonNetwork::TAG1, "Button 2 Callback Executed");
+            // 在这里添加按钮2被按下时的处理逻辑
+    
+        }
+        );
+        adc_button->registerCallback(2, [this]() {
+            ESP_LOGI(ADCButtonNetwork::TAG1, "Button 3 Callback Executed");
+            
+            auto codec = GetAudioCodec();
+            auto volume = codec->output_volume() + 10;
+            if (volume > 100) {
+                volume = 100;
+            }
+            codec->SetOutputVolume(volume);
+        }
+        );
+        adc_cali_mutex = adc_button->get_adc_cali_mutex();
+        adc_button->set_adc_cali_handle(adc1_cali_handle);
+#endif
     }
 
     void InitializeButtons() {
@@ -376,7 +428,11 @@ private:
         auto& thing_manager = iot::ThingManager::GetInstance();
         thing_manager.AddThing(iot::CreateThing("Speaker"));
         thing_manager.AddThing(iot::CreateThing("Battery"));
+        #ifdef SD_IS_EXIST
+        #if SD_IS_EXIST == 1
         thing_manager.AddThing(iot::CreateThing("SdPlayer"));
+        #endif
+        #endif
     }
 
 
@@ -445,14 +501,35 @@ public:
         if (!adc1_handle) {
             InitializeADC();
         }
-
+        esp_err_t ret ;
         int raw_value = 0;
         int voltage = 0;
 
         ESP_ERROR_CHECK(adc_oneshot_read(adc1_handle, VBAT_ADC_CHANNEL, &raw_value));
 
         if (do_calibration) {
-            ESP_ERROR_CHECK(adc_cali_raw_to_voltage(adc1_cali_handle, raw_value, &voltage));
+
+            if (adc_cali_mutex != nullptr) {
+                // 获取互斥锁，超时时间100ms
+                if (xSemaphoreTake(adc_cali_mutex, pdMS_TO_TICKS(100)) == pdTRUE) {
+                    // 调用原始的ADC校准函数
+                    ret = adc_cali_raw_to_voltage(adc1_cali_handle, raw_value, &voltage);
+                    
+                    // 释放互斥锁
+                    xSemaphoreGive(adc_cali_mutex);
+                    
+                    if (ret != ESP_OK) {
+                        ESP_LOGW(ADC_CALI_TAG, "ADC calibration failed: %s", esp_err_to_name(ret));
+                    }
+                } else {
+                    ESP_LOGE(ADC_CALI_TAG, "Failed to acquire ADC calibration mutex within timeout");
+                    ret = ESP_ERR_TIMEOUT;
+                }
+            }else {
+                ESP_ERROR_CHECK(adc_cali_raw_to_voltage(adc1_cali_handle, raw_value, &voltage));
+            }
+
+            
             voltage = voltage * 3 / 2; // compensate for voltage divider
             ESP_LOGI(TAG, "Calibrated voltage: %d mV", voltage);
         } else {

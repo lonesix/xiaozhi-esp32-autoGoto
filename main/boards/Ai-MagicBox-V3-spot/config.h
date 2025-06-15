@@ -18,7 +18,7 @@
 #define IMU_BMI270_IS_EXIST 1 // 1:exist 0:not exist
 #define TISHIYIN_IS_EXIST 1 // 1:exist 0:not exist
 #define SLEEP_MODE_IS_EXIST 1 // 1:exist 0:not exist
-
+#define SD_IS_EXIST 1 // 1:exist 0:not exist
 
 
 
@@ -59,14 +59,16 @@ enum SERVERCONNECTIONMETHOD{
 #define LED_PIN                  GPIO_NUM_3
 #define WAI_KEY_GPIO             GPIO_NUM_14
 #define VOLUME_BUTTON_GPIO       GPIO_NUM_10
+#define VOLUME_BUTTON_CHANNEL      ADC_CHANNEL_9
 #define IMU_BMI270_INT_PIN       GPIO_NUM_13
+#define VCC_4G_EXTERNAL_VOICE_WAKE_UP_EN GPIO_NUM_12
 
-#define VBAT_ADC_CHANNEL         ADC_CHANNEL_9  // S3: IO10
+#define VBAT_ADC_CHANNEL         ADC_CHANNEL_8  // S3: IO9
 #define MCU_VCC_CTL              GPIO_NUM_NC     // set 1 to power on MCU
 #define PERP_VCC_CTL             GPIO_NUM_15     // set 1 to power on peripherals
 
 #define ADC_ATTEN                ADC_ATTEN_DB_12
-#define ADC_WIDTH                ADC_BITWIDTH_DEFAULT
+#define ADC_WIDTH                ADC_BITWIDTH_12
 #define FULL_BATTERY_VOLTAGE     4100
 #define EMPTY_BATTERY_VOLTAGE    3200
 
