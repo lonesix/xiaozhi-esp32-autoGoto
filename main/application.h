@@ -109,6 +109,7 @@ public:
     const int SDPLAYERMONITOR_SPEAKINGTOIOT_BIT = BIT2;
     const int SDPLAYERMONITOR_SPEAKINGTOIOT_STR_BIT = BIT3;
     const int SDPLAYERMONITOR_SPEAKINGTOIOT_NUM_BIT = BIT4;
+    const int SDPLAYE_PLAYING_BIT = BIT5;
     void SetSdEventStop(){
         if (sdEvent_group_ != NULL)
         {
@@ -116,6 +117,22 @@ public:
             printf("SetSdEventStop\n");
         }
     }
+    EventBits_t GetSdEvent(){
+        
+        if (sdEvent_group_ == NULL)
+        {
+            return 0;
+        }
+        EventBits_t receivedBits = xEventGroupWaitBits(
+            sdEvent_group_,
+            SDPLAYE_PLAYING_BIT  , 
+            pdTRUE,// pdTRUE, // pdTRUE表示等待位被置位后清除该位，pdFALSE表示不清除
+            pdFALSE,// pdFALSE, // pdTRUE表示逻辑与，pdFALSE表示逻辑或
+            pdMS_TO_TICKS(50));
+        printf( "receivedBits: %ld", receivedBits);
+        return receivedBits;
+    }
+
     #endif
     bool CanEnterSleepMode();
   

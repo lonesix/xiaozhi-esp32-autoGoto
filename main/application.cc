@@ -1088,6 +1088,20 @@ void Application::AbortSpeaking(AbortReason reason) {
     ESP_LOGI(TAG, "Abort speaking");
     aborted_ = true;
     protocol_->SendAbortSpeaking(reason);
+#if SD_IS_EXIST && defined(CONFIG_BOARD_TYPE_AI_MAGIC_BOX_V3_SPOT)
+    EventBits_t SdEvent = GetSdEvent();
+    if(SdEvent&BIT5){
+        ESP_LOGI(TAG, "SdEvent&BIT5");
+        opus_encoder_->ResetState(); //Reset encoder
+        audio_processor_->Stop(); //Stop audio processor
+        opus_decoder_->ResetState();
+        audio_decode_queue_.clear();
+        audio_decode_cv_.notify_all();
+        ResetDecoder();
+        ESP_LOGI(TAG, "Abort speaking：ResetDecoder");
+        aborted_ = false;
+    }
+#endif
 }
 
 void Application::SetListeningMode(ListeningMode mode) {

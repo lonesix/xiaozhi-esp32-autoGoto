@@ -278,7 +278,7 @@ SdPlayer() : Thing("sd_player", "可以播放sd卡音乐的机器人") {
                         {
                             //等待播放队列为空
                             app.WaitSoundToFinish();
-                            xEventGroupSetBits(sdPlayerMonitor_EventGroup, SDPLAYE_PLAYING_BIT);
+
                         }
                     }else
                     {
@@ -310,17 +310,25 @@ SdPlayer() : Thing("sd_player", "可以播放sd卡音乐的机器人") {
                     if (app.GetDeviceState() == DeviceState::kDeviceStateSpeaking)
                     {
                         self->playMusic_str(self->currentPlayingMusic_);
+                        xEventGroupSetBits(sdPlayerMonitor_EventGroup, SDPLAYE_PLAYING_BIT);
+                        ESP_LOGI(TAG, "SDPlayerMonitor:SDPLAYE_PLAYING_BIT");
                     }
                 }
                 if (receivedBits & SDPLAYERMONITOR_SPEAKINGTOIOT_NUM_BIT) {
                     if (app.GetDeviceState() == DeviceState::kDeviceStateSpeaking)
                     {
                         self->playMusic_num(self->currentPlayingMusicNumber_);
+                        xEventGroupSetBits(sdPlayerMonitor_EventGroup, SDPLAYE_PLAYING_BIT);
+                        ESP_LOGI(TAG, "SDPlayerMonitor:SDPLAYE_PLAYING_BIT");
                     }
                 }
+                ESP_LOGI(TAG, "SDPlayerMonitor: wait");
+                //等待播放队列为空
                 //等待播放队列为空
                 app.WaitSoundToFinish();
+                ESP_LOGI(TAG, "SDPlayerMonitor: SoundToFinish");
                 xEventGroupClearBits(sdPlayerMonitor_EventGroup, SDPLAYE_PLAYING_BIT);
+                ESP_LOGI(TAG, "SDPlayerMonitor: xEventGroupClearBits");
                 //检查sd卡是否插上
                 // self->sdIsInited_ = self->check_sd_card_status();
                 //播放提示音
