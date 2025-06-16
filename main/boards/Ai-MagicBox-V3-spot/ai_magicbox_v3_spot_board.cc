@@ -37,6 +37,11 @@ private:
     Button key_button_;
     Button External_voice_wake_up_;
     Button wai_key_button_;
+    Button Volume_add_button_;
+    Button Volume_sub_button_;
+    // Button volume_key_button_;
+
+
     // adc_oneshot_unit_handle_t volume_adc_button_handle;
     // AdcButton volume_key_button_;
     ADCButtonNetwork* adc_button;
@@ -289,6 +294,24 @@ private:
             }
             app.ToggleChatState();
         });
+        Volume_add_button_.OnClick([this]() {
+            auto codec = GetAudioCodec();
+            auto volume = codec->output_volume() + 10;
+            if (volume > 100) {
+                volume = 100;
+            }
+            codec->SetOutputVolume(volume);
+            printf("volume = %d\n", volume);
+        });
+        Volume_sub_button_.OnClick([this]() {
+            auto codec = GetAudioCodec();
+            auto volume = codec->output_volume() - 10;
+            if (volume < 0) {
+                volume = 0;
+            }
+            codec->SetOutputVolume(volume);
+            printf("volume = %d\n", volume);
+        });
 
         External_voice_wake_up_.OnClick([this]() {
             auto& app = Application::GetInstance();
@@ -468,7 +491,9 @@ public:
                               boot_button_(false,BOOT_BUTTON_GPIO,false), 
                               key_button_(true,KEY_BUTTON_GPIO, true),
                               External_voice_wake_up_(true,EXTERNAL_VOICE_WAKE_UP_GPIO,false),
-                              wai_key_button_(false,WAI_KEY_GPIO, false){
+                              wai_key_button_(false,WAI_KEY_GPIO, false),
+                              Volume_add_button_(false,VOLUME_ADD_BUTTON_GPIO, false),
+                              Volume_sub_button_(false,VOLUME_SUB_BUTTON_GPIO, false){
         InitializePowerCtl();
         InitializeADC();
         InitializeI2c();
