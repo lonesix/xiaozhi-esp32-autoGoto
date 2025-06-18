@@ -80,5 +80,5 @@ enum SERVERCONNECTIONMETHOD{
 #define BSP_SD_D0           (GPIO_NUM_16)
 #define MOUNT_POINT              "/sdcard"
 #define EXAMPLE_MAX_CHAR_SIZE    64
-#define AUDIO_FILE_EXTENSION    ".P3"
+#define AUDIO_FILE_EXTENSION    ".p3"
 #endif // _BOARD_CONFIG_H_

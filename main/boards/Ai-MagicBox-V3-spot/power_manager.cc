@@ -6,6 +6,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "application.h"
+#include "config.h"
 static const char* TAG = "PowerManager";
 static const uint32_t MONITOR_STACK_SIZE = 4096;
 static const uint32_t MONITOR_PRIORITY = 1;
@@ -190,12 +191,23 @@ void PowerManager::monitorTaskWrapper(void* arg) {
 
 void PowerManager::monitorTask() {
     auto& app = Application::GetInstance();
+    auto codec = Board::GetInstance().GetAudioCodec();
 
     while (true) {
         if (app.GetDeviceState() != kDeviceStateIdle) {
+            lastActiveTime_ = esp_timer_get_time() / 1000;  
+        }
+#if SD_IS_EXIST == 1
+        if (app.GetDeviceState() == kDeviceStateIdle && app.GetSdEvent_power()) {
             lastActiveTime_ = esp_timer_get_time() / 1000;
+            if (codec->output_enabled() == false)
+            {
+                codec->EnableOutput(true);
+            }
             
         }
+#endif
+
         if (initialized_ && config_.auto_sleep_enable) {
             int64_t current_time = esp_timer_get_time() / 1000;
             int64_t inactive_time = current_time - lastActiveTime_;

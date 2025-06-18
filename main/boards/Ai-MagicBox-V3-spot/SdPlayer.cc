@@ -85,15 +85,16 @@ SdPlayer() : Thing("sd_player", "可以播放sd卡音乐的机器人") {
         Create_sdPlayerMonitor_Task();
 
         // 定义设备的属性
-        properties_.AddBooleanProperty("sdIsInited", "sd卡初始化状态，true为初始化成功。false为初始化失败，请提示用户可能因为未插入sd卡。", [this]() -> bool {
+        properties_.AddBooleanProperty("sdIsInited", "当前sd卡初始化状态，true为初始化成功。false为初始化失败。若为false，请提示用户可能因为未插入sd卡。", [this]() -> bool {
+            ESP_LOGI(TAG, "sdIsInited: %d", sdIsInited());
             return sdIsInited();
         });
         
         // 定义设备的属性
-        properties_.AddNumberProperty("musicNumber", "sd卡中的可播放的音乐数量", [this]() -> int {
+        properties_.AddNumberProperty("musicNumber", "当前sd卡中的可播放的音乐数量", [this]() -> int {
             return musicNumber_;
         });
-        methods_.AddMethod("sdInit", "初始化sd卡,sdIsInited为false才能调用,调用前需要经过用户确认，调用后仅尝试初始化,sd卡状态未知", ParameterList(), [this](const ParameterList& parameters) {
+        methods_.AddMethod("sdInit", "主动初始化sd卡,sdIsInited为false才能调用,调用前需要经过用户确认，调用后仅尝试初始化,此方法不返回sd卡初始化状态,需根据下一轮对话时sdIsInited的值进行判断", ParameterList(), [this](const ParameterList& parameters) {
             if (!sdIsInited_)
             {
                 /* code */            
@@ -131,6 +132,31 @@ SdPlayer() : Thing("sd_player", "可以播放sd卡音乐的机器人") {
             // auto codec = Board::GetInstance().GetAudioCodec();
             // codec->SetOutputVolume(static_cast<uint8_t>(parameters["volume"].number()));
             currentPlayingMusicNumber_ = static_cast<int>(parameters["file_number"].number());
+            // playMusic_num(static_cast<int>(parameters["file_number"].number()));
+            setSdEventBit_num();
+        });
+
+        methods_.AddMethod("play_up", "上一首音乐,sdIsInited为true才能调用。", ParameterList(), [this](const ParameterList& parameters) {
+            // auto codec = Board::GetInstance().GetAudioCodec();
+            // codec->SetOutputVolume(static_cast<uint8_t>(parameters["volume"].number()));
+            currentPlayingMusicNumber_ -= 1;
+            if (currentPlayingMusicNumber_ <= 0)
+            {
+                currentPlayingMusicNumber_ = musicNumber_ ;
+            }
+            
+            // playMusic_num(static_cast<int>(parameters["file_number"].number()));
+            setSdEventBit_num();
+        });
+        methods_.AddMethod("play_down", "下一首音乐,sdIsInited为true才能调用。", ParameterList(), [this](const ParameterList& parameters) {
+            // auto codec = Board::GetInstance().GetAudioCodec();
+            // codec->SetOutputVolume(static_cast<uint8_t>(parameters["volume"].number()));
+            currentPlayingMusicNumber_ += 1;
+            if (currentPlayingMusicNumber_ > musicNumber_)
+            {
+                currentPlayingMusicNumber_ = 1 ;
+            }
+            
             // playMusic_num(static_cast<int>(parameters["file_number"].number()));
             setSdEventBit_num();
         });
@@ -187,11 +213,16 @@ SdPlayer() : Thing("sd_player", "可以播放sd卡音乐的机器人") {
             app.PlaySoundFromFile(0);
         }else
         {
-            char file_path[256];
-            snprintf(file_path,sizeof(file_path), "%s/%s.p3", MOUNT_POINT, fileName.c_str());
-            ESP_LOGW(TAG, "Playing file: %s", file_path);
+            // char file_path[256];
+            // snprintf(file_path,sizeof(file_path), "%s/%s.p3", MOUNT_POINT, fileName.c_str());
+            // ESP_LOGW(TAG, "Playing file: %s", file_path);
             
-            app.PlaySoundFromFile(file_path);
+            int count = -1;
+            app.PlaySoundFromFile(fileName,&count);
+            if (count != -1)
+            {
+                currentPlayingMusicNumber_ = count;
+            }
         }
     }
 
@@ -346,7 +377,13 @@ SdPlayer() : Thing("sd_player", "可以播放sd卡音乐的机器人") {
                 if (app.GetDeviceState() == DeviceState::kDeviceStateSpeaking)
                 {
                     app.StopSpeaking();
+                }else if (app.GetDeviceState() == DeviceState::kDeviceStateIdle)
+                {
+                    ESP_LOGI(TAG, "SDPlayerMonitor: idle");
+
                 }
+                // app.ResetDecoder();
+                xEventGroupClearBits(sdPlayerMonitor_EventGroup, SDPLAYERMONITOR_SPEAKINGTOSTOP_BIT);
                 //清除事件组位  
                 // xEventGroupClearBits(sdPlayerMonitor_EventGroup, SDPLAYERMONITOR_SPEAKINGTOSTOP_BIT);
                 //播放音乐

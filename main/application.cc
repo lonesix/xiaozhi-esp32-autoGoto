@@ -328,34 +328,99 @@ void Application::TiShiYin_V2() {
         background_task_->WaitForCompletion();
     }
 }
-void Application::PlaySoundFromFile(const std::string& file_path_name) {
- 
+void Application::PlaySoundFromFile(const std::string& search_query,int *count1) {
     auto &app = Application::GetInstance();
     auto codec = Board::GetInstance().GetAudioCodec();
+    ESP_LOGI(TAG, "Searching for file: %s", search_query.c_str());
+
+    // 打开指定目录
+    DIR *dir = opendir(MOUNT_POINT);
+    if (dir == NULL) {
+        ESP_LOGE(TAG, "Failed to open directory: %s", MOUNT_POINT);
+        return;
+    }
+
+    struct dirent *entry;
+    std::string file_path_name;
+    bool found = false;
+
+    // 遍历目录中的文件
+    int count = 0;
+    while ((entry = readdir(dir)) != NULL) {
+        std::string file_name = entry->d_name;
+        if (strstr(entry->d_name, AUDIO_FILE_EXTENSION)) {
+            count++;
+            // 检查文件名是否包含用户输入的搜索关键词
+            if (file_name.find(search_query) != std::string::npos) {
+                file_path_name = std::string(MOUNT_POINT) + std::string("/") + file_name;
+                found = true;
+                *count1 = count;
+                break;
+            }
+        }
+        
+    }
+
+    closedir(dir);
+
+    if (!found) {
+        ESP_LOGE(TAG, "No matching file found for query: %s", search_query.c_str());
+        return;
+    }
+
     ESP_LOGI(TAG, "Playing file: %s", file_path_name.c_str());
+
     // 尝试打开文件
     std::ifstream file(file_path_name.c_str(), std::ios::binary);
-    if (!file.is_open())
-    {
-    ESP_LOGE(TAG, "Failed to open file: %s", file_path_name.c_str());
-    return;
+    if (!file.is_open()) {
+        ESP_LOGE(TAG, "Failed to open file: %s", file_path_name.c_str());
+        return;
     }
+
     // 获取文件大小并读取文件内容
     file.seekg(0, std::ios::end);
     size_t size = file.tellg();
     file.seekg(0, std::ios::beg);
     std::vector<char> file_data(size);
     file.read(file_data.data(), size);
-    if (!file)
-    {
-    ESP_LOGE(TAG, "Failed to read the entire file: %s", file_path_name.c_str());
-    return;
+    if (!file) {
+        ESP_LOGE(TAG, "Failed to read the entire file: %s", file_path_name.c_str());
+        return;
     }
+
     // 读取并播放声音
     std::string_view sound_view(file_data.data(), file_data.size());
     app.PlaySound(sound_view);
     ESP_LOGI(TAG, "File %s played successfully", file_path_name.c_str());
 }
+// void Application::PlaySoundFromFile(const std::string& file_path_name) {
+ 
+//     auto &app = Application::GetInstance();
+//     auto codec = Board::GetInstance().GetAudioCodec();
+//     ESP_LOGI(TAG, "Playing file: %s", file_path_name.c_str());
+//     // 尝试打开文件
+//     std::ifstream file(file_path_name.c_str(), std::ios::binary);
+//     if (!file.is_open())
+//     {
+//     ESP_LOGE(TAG, "Failed to open file: %s", file_path_name.c_str());
+//     return;
+//     }
+//     // 获取文件大小并读取文件内容
+//     file.seekg(0, std::ios::end);
+//     size_t size = file.tellg();
+//     file.seekg(0, std::ios::beg);
+//     std::vector<char> file_data(size);
+//     file.read(file_data.data(), size);
+//     if (!file)
+//     {
+//     ESP_LOGE(TAG, "Failed to read the entire file: %s", file_path_name.c_str());
+//     return;
+//     }
+//     // 读取并播放声音
+//     std::string_view sound_view(file_data.data(), file_data.size());
+//     app.PlaySound(sound_view);
+//     ESP_LOGI(TAG, "File %s played successfully", file_path_name.c_str());
+// }
 
 void Application::PlaySoundFromFile(int file_number) {
     
@@ -433,6 +498,15 @@ void Application::ToggleChatState() {
     }
 
     if (device_state_ == kDeviceStateIdle) {
+#if defined(CONFIG_BOARD_TYPE_AI_MAGIC_BOX_V3_SPOT)
+        if (GetSdEvent() & SDPLAYE_PLAYING_BIT) 
+        {
+            ESP_LOGE(TAG, "SD card is playing, cannot start chat");
+            ResetDecoder();
+            return;
+        }
+        
+#endif
 #if TISHIYIN_IS_EXIST      
         Alert("TiShi", "TiShi", "TiShi",Lang::Sounds::P3_SUCCESS);
         vTaskDelay(pdMS_TO_TICKS(800));
@@ -641,18 +715,21 @@ void Application::Start() {
             #endif
             auto display = Board::GetInstance().GetDisplay();
             display->SetChatMessage("system", "");
-            SetDeviceState(kDeviceStateIdle);
-            #if TISHIYIN_IS_EXIST
-            if (isAlert)
+            if (device_state_ != kDeviceStateIdle)
             {
-                ResetDecoder();
-                        
-                Alert("TiShi", "TiShi", "TiShi",Lang::Sounds::P3_LOW_BATTERY);
-                vTaskDelay(pdMS_TO_TICKS(800));
-                background_task_->WaitForCompletion();
+  
+                SetDeviceState(kDeviceStateIdle);
+                #if TISHIYIN_IS_EXIST
+                if (isAlert)
+                {
+                    ResetDecoder();
+                            
+                    Alert("TiShi", "TiShi", "end",Lang::Sounds::P3_LOW_BATTERY);
+                    vTaskDelay(pdMS_TO_TICKS(800));
+                    background_task_->WaitForCompletion();
+                }
+                #endif
             }
-            #endif
-
         });
     });
     protocol_->OnIncomingJson([this, display](const cJSON* root) {
@@ -1092,11 +1169,11 @@ void Application::AbortSpeaking(AbortReason reason) {
     EventBits_t SdEvent = GetSdEvent();
     if(SdEvent&BIT5){
         ESP_LOGI(TAG, "SdEvent&BIT5");
-        opus_encoder_->ResetState(); //Reset encoder
-        audio_processor_->Stop(); //Stop audio processor
-        opus_decoder_->ResetState();
-        audio_decode_queue_.clear();
-        audio_decode_cv_.notify_all();
+        // opus_encoder_->ResetState(); //Reset encoder
+        // audio_processor_->Stop(); //Stop audio processor
+        // opus_decoder_->ResetState();
+        // audio_decode_queue_.clear();
+        // audio_decode_cv_.notify_all();
         ResetDecoder();
         ESP_LOGI(TAG, "Abort speaking：ResetDecoder");
         aborted_ = false;

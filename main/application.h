@@ -100,7 +100,8 @@ public:
     EventGroupHandle_t sdEvent_group_;
     void WaitSoundToFinish();
     void StopSpeaking();
-    void PlaySoundFromFile(const std::string &file_path_name);
+    // void PlaySoundFromFile(const std::string &file_path_name);
+    void PlaySoundFromFile(const std::string& search_query,int *count1);
     void TiShiYin_V2();
     void PlaySoundFromFile(int file_number);
     void SetSdEventHandle(EventGroupHandle_t event_group){sdEvent_group_ = event_group;}
@@ -131,6 +132,26 @@ public:
             pdMS_TO_TICKS(50));
         printf( "receivedBits: %ld", receivedBits);
         return receivedBits;
+    }
+    bool GetSdEvent_power(){
+        
+        if (sdEvent_group_ == NULL)
+        {
+            return false;
+        }
+        EventBits_t receivedBits = xEventGroupWaitBits(
+            sdEvent_group_,
+            SDPLAYE_PLAYING_BIT  , 
+            pdFALSE,// pdTRUE, // pdTRUE表示等待位被置位后清除该位，pdFALSE表示不清除
+            pdFALSE,// pdFALSE, // pdTRUE表示逻辑与，pdFALSE表示逻辑或
+            pdMS_TO_TICKS(10));
+        // printf( "receivedBits: %ld", receivedBits);
+        if (receivedBits & SDPLAYE_PLAYING_BIT)
+        {
+            return true;
+        }
+        
+        return false;
     }
 
     #endif

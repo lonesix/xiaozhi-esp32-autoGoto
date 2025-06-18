@@ -1,0 +1,1 @@
+sd卡中文文件名:https://blog.csdn.net/liuguomark/article/details/125931520#:~:text=%E4%BC%B0%E8%AE%A1fat%E5%BA%95%E5%B1%82%E5%8F%88%E7%94%A8%E5%88%AB%E7%9A%84%E7%BC%96%E7%A0%81%E8%BF%9B%E8%A1%8C%E4%BA%86%E8%BD%AC%E6%8D%A2,%E5%A4%AA%E6%83%B3%E5%BD%93%E7%84%B6%E4%BA%86%E3%80%82
