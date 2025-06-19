@@ -748,7 +748,7 @@ void Application::Start() {
                 {
                     ResetDecoder();
                             
-                    Alert("TiShi", "TiShi", "end",Lang::Sounds::P3_LOW_BATTERY);
+                    Alert("TiShi", "TiShi", "end",Lang::Sounds::P3_TUICHU);
                     vTaskDelay(pdMS_TO_TICKS(800));
                     background_task_->WaitForCompletion();
                 }

@@ -508,6 +508,20 @@ private:
     }
 
 public:
+    int level_; 
+    void setlevel(int level) {
+        level_ = level;
+    }
+    int getlevel() {
+        return level_;
+    }
+    bool charging_;
+    void setcharging(bool charging) {
+        charging_ = charging;
+    }
+    bool getcharging() {
+        return charging_;
+    }
     //NET_IS_WIFI_OR_ML307 在config.h中定义
     AiMagicBoxV2SpotBoard() : DualNetworkBoard(ML307_TX_PIN, ML307_RX_PIN, 4096,NET_IS_WIFI_OR_ML307),
                               boot_button_(false,BOOT_BUTTON_GPIO,false), 
@@ -590,8 +604,9 @@ public:
 
         // 计算电量百分比
         level = (voltage - EMPTY_BATTERY_VOLTAGE) * 100 / (FULL_BATTERY_VOLTAGE - EMPTY_BATTERY_VOLTAGE);
-
+        setlevel(level);
         charging = gpio_get_level(CHARGE_GPIO);
+        setcharging(charging);
         ESP_LOGI(TAG, "Battery Level: %d%%, Charging: %s", level, charging ? "Yes" : "No");
         return true;
     }

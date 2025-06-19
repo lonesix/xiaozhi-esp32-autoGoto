@@ -188,11 +188,24 @@ void PowerManager::enterDeepSleep() {
 void PowerManager::monitorTaskWrapper(void* arg) {
     static_cast<PowerManager*>(arg)->monitorTask();
 }
-
+int level_ = 0;
+bool charging_ = false;
+bool discharging_ = false;
+//电量是否满格
+bool isFull = false;
+bool moni_ = false;
 void PowerManager::monitorTask() {
     auto& app = Application::GetInstance();
     auto codec = Board::GetInstance().GetAudioCodec();
-
+    auto& board = Board::GetInstance();
+    int lastLevel_ = 0;
+    bool lastCharging_ = false;
+    board.GetBatteryLevel(lastLevel_, lastCharging_, discharging_);
+    if (lastLevel_ >= 95)
+    {
+        isFull = true;
+    }
+    
     while (true) {
         if (app.GetDeviceState() != kDeviceStateIdle) {
             lastActiveTime_ = esp_timer_get_time() / 1000;  
@@ -205,7 +218,52 @@ void PowerManager::monitorTask() {
                 codec->EnableOutput(true);
             }
             
+        }else if (app.GetDeviceState() == kDeviceStateIdle && app.GetSdEvent_power() == false) {
+            //获取电量和充电状态
+            board.GetBatteryLevel(level_, charging_, discharging_);
+            //判断
+            if (lastCharging_ != charging_ && charging_ == true) {
+                //充电开始
+                ESP_LOGI(TAG, "charging start");
+                std::string wake_word="你正在被充电";
+                moni_ = true;
+                app.MoniWordInvoke(wake_word );
+            } else if (lastCharging_ != charging_ && charging_ == false) {
+                //充电结束
+                ESP_LOGI(TAG, "charging end");
+                if (level_ >= 90 ) 
+                {
+                    isFull = true;
+                }else{
+                    isFull = false;
+                }
+                
+                if (isFull == true) 
+                {
+                    moni_ = true;
+                    std::string wake_word="电量已满，吃饱了没";
+                    app.MoniWordInvoke(wake_word );
+                }else{
+                    /* code */
+                    moni_ = true;
+                    std::string wake_word="电量未满，不给你冲了";
+                    app.MoniWordInvoke(wake_word + std::to_string(level_) + "%");
+                }
+                
+                
+                
+            }
+
+            //更新last电量和充电状态
+            lastLevel_ = level_;
+            lastCharging_ = charging_;
         }
+        if (app.GetDeviceState() == kDeviceStateListening  && moni_ == true) 
+        {
+            moni_ = false;
+            app.ToggleChatState();
+        }
+        
 #endif
 
         if (initialized_ && config_.auto_sleep_enable) {
