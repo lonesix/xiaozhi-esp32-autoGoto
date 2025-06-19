@@ -58,6 +58,8 @@ enum SERVERCONNECTIONMETHOD{
 #define KEY_BUTTON_GPIO          GPIO_NUM_11 //
 #define LED_PIN                  GPIO_NUM_3
 #define WAI_KEY_GPIO             GPIO_NUM_14
+#define WAI4_KEY_GPIO             GPIO_NUM_21
+#define CHARGE_GPIO              GPIO_NUM_41
 // #define VOLUME_BUTTON_GPIO       GPIO_NUM_10
 // #define VOLUME_BUTTON_CHANNEL      ADC_CHANNEL_9
 #define IMU_BMI270_INT_PIN       GPIO_NUM_13

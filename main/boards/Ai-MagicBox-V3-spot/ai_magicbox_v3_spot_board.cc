@@ -37,6 +37,7 @@ private:
     Button key_button_;
     Button External_voice_wake_up_;
     Button wai_key_button_;
+    Button wai4_key_button_;
     Button Volume_add_button_;
     Button Volume_sub_button_;
     // Button volume_key_button_;
@@ -335,6 +336,18 @@ private:
             }
             app.ToggleChatState(); 
         });
+        wai4_key_button_.OnClick([this]() {
+            std::string wake_word="你的左手被我摸了一下";
+            Application::GetInstance().MoniWordInvoke(wake_word);
+        });
+        wai4_key_button_.OnDoubleClick([this]() {
+            std::string wake_word="你的右手被我摸了一下";
+            Application::GetInstance().MoniWordInvoke(wake_word);
+        });
+        wai4_key_button_.OnLongPress([this]() {
+            std::string wake_word="你的头发被正在被我抚摸";
+            Application::GetInstance().MoniWordInvoke(wake_word);
+        });
         key_button_.OnClick([this]() {
             auto& app = Application::GetInstance();
             app.ToggleChatState();
@@ -413,6 +426,15 @@ private:
     }
 
     void InitializeGPIO() {
+        gpio_config_t charge_io = {
+            .pin_bit_mask = (1ULL << CHARGE_GPIO),
+            .mode = GPIO_MODE_INPUT,
+            .pull_up_en = GPIO_PULLUP_DISABLE,
+            .pull_down_en = GPIO_PULLDOWN_DISABLE,
+            .intr_type = GPIO_INTR_DISABLE
+        };
+        gpio_config(&charge_io);
+
         gpio_config_t io_pa = {
             .pin_bit_mask = (1ULL << AUDIO_CODEC_PA_PIN),
             .mode = GPIO_MODE_OUTPUT,
@@ -492,6 +514,7 @@ public:
                               key_button_(true,KEY_BUTTON_GPIO, true),
                               External_voice_wake_up_(true,EXTERNAL_VOICE_WAKE_UP_GPIO,false),
                               wai_key_button_(false,WAI_KEY_GPIO, false),
+                              wai4_key_button_(false,WAI4_KEY_GPIO, false),
                               Volume_add_button_(false,VOLUME_ADD_BUTTON_GPIO, false),
                               Volume_sub_button_(false,VOLUME_SUB_BUTTON_GPIO, false){
         InitializePowerCtl();
@@ -568,7 +591,7 @@ public:
         // 计算电量百分比
         level = (voltage - EMPTY_BATTERY_VOLTAGE) * 100 / (FULL_BATTERY_VOLTAGE - EMPTY_BATTERY_VOLTAGE);
 
-        // charging = gpio_get_level(MCU_VCC_CTL);
+        charging = gpio_get_level(CHARGE_GPIO);
         ESP_LOGI(TAG, "Battery Level: %d%%, Charging: %s", level, charging ? "Yes" : "No");
         return true;
     }

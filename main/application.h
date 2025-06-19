@@ -98,6 +98,7 @@ public:
     void PlaySound(const std::string_view& sound);
     #if CONFIG_BOARD_TYPE_AI_MAGIC_BOX_V3_SPOT 
     EventGroupHandle_t sdEvent_group_;
+    void MoniWordInvoke(const std::string &wake_word);
     void WaitSoundToFinish();
     void StopSpeaking();
     // void PlaySoundFromFile(const std::string &file_path_name);

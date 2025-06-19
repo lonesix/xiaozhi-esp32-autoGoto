@@ -274,6 +274,30 @@ void Application::PlaySound(const std::string_view& sound) {
     }
 }
 #if CONFIG_BOARD_TYPE_AI_MAGIC_BOX_V3_SPOT 
+void Application::MoniWordInvoke(const std::string& wake_word) {
+    if (device_state_ == kDeviceStateIdle) {
+        ToggleChatState();
+        Schedule([this, wake_word]() {
+            if (protocol_) {
+                protocol_->SendWakeWordDetected(wake_word); 
+            }
+        }); 
+    } else if (device_state_ == kDeviceStateSpeaking) {
+        ToggleChatState();
+        Schedule([this, wake_word]() {
+            if (protocol_) {
+                protocol_->SendWakeWordDetected(wake_word); 
+            }
+        }); 
+    } else if (device_state_ == kDeviceStateListening) {   
+        // ToggleChatState();
+        Schedule([this, wake_word]() {
+            if (protocol_) {
+                protocol_->SendWakeWordDetected(wake_word); 
+            }
+        }); 
+    }
+}
 void Application::WaitSoundToFinish() {
     // Wait for the previous sound to finish
     {
