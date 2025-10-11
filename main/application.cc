@@ -322,101 +322,101 @@ void Application::Start()
 });
     //火警任务
     
-    xTaskCreate([](void *arg)
-    {
-        vTaskDelay(pdMS_TO_TICKS(8000));
-        bool flag = false;
-        while (1)
-        {
-        Application* app = (Application*)arg;
-        if (app->flame_warning == true && app->flameWarning == false) //火焰值超标，且未发送过警报
-        {
-            app->StartListening();
-            vTaskDelay(pdMS_TO_TICKS(200));
-            while (app->GetChatState() != ChatState::kChatStateListening)
-            {
-                vTaskDelay(pdMS_TO_TICKS(120));
-            }
+    // xTaskCreate([](void *arg)
+    // {
+    //     vTaskDelay(pdMS_TO_TICKS(8000));
+    //     bool flag = false;
+    //     while (1)
+    //     {
+    //     Application* app = (Application*)arg;
+    //     if (app->flame_warning == true && app->flameWarning == false) //火焰值超标，且未发送过警报
+    //     {
+    //         app->StartListening();
+    //         vTaskDelay(pdMS_TO_TICKS(200));
+    //         while (app->GetChatState() != ChatState::kChatStateListening)
+    //         {
+    //             vTaskDelay(pdMS_TO_TICKS(120));
+    //         }
             
-            if (app->GetChatState() == ChatState::kChatStateListening)
-            {
-                vTaskDelay(pdMS_TO_TICKS(200));
-                std::string greet = "火灾警报";
-                app->protocol_->SendGreetContent(greet);
-            }
-            app->flameWarning = true;
-            vTaskDelay(pdMS_TO_TICKS(3000));
-        }else if (app->flame_warning == false && app->flameWarning == true) //火焰值恢复正常，且已发送过警报
-        {
-            app->StartListening();
-            vTaskDelay(pdMS_TO_TICKS(200));
-            while (app->GetChatState() != ChatState::kChatStateListening)
-            {
-                vTaskDelay(pdMS_TO_TICKS(200));
-            }
-            if (app->GetChatState() == ChatState::kChatStateListening)
-            {
-                vTaskDelay(pdMS_TO_TICKS(120));
-                std::string greet = "火灾警报解除";
-                app->protocol_->SendGreetContent(greet);
-            }
-            app->flameWarning = false;
-            app->sendCjsonToSerial( "WS2812", "write", "rgb", "0", "1");
-            flag = false;
-            vTaskDelay(pdMS_TO_TICKS(1000));
-            if (app->GetChatState() == ChatState::kChatStateListening)
-            {
-                std::string greet = "火灾警报解除";
-                app->protocol_->SendGreetContent(greet);
-            }
+    //         if (app->GetChatState() == ChatState::kChatStateListening)
+    //         {
+    //             vTaskDelay(pdMS_TO_TICKS(200));
+    //             std::string greet = "火灾警报";
+    //             app->protocol_->SendGreetContent(greet);
+    //         }
+    //         app->flameWarning = true;
+    //         vTaskDelay(pdMS_TO_TICKS(3000));
+    //     }else if (app->flame_warning == false && app->flameWarning == true) //火焰值恢复正常，且已发送过警报
+    //     {
+    //         app->StartListening();
+    //         vTaskDelay(pdMS_TO_TICKS(200));
+    //         while (app->GetChatState() != ChatState::kChatStateListening)
+    //         {
+    //             vTaskDelay(pdMS_TO_TICKS(200));
+    //         }
+    //         if (app->GetChatState() == ChatState::kChatStateListening)
+    //         {
+    //             vTaskDelay(pdMS_TO_TICKS(120));
+    //             std::string greet = "火灾警报解除";
+    //             app->protocol_->SendGreetContent(greet);
+    //         }
+    //         app->flameWarning = false;
+    //         app->sendCjsonToSerial( "WS2812", "write", "rgb", "0", "1");
+    //         flag = false;
+    //         vTaskDelay(pdMS_TO_TICKS(1000));
+    //         if (app->GetChatState() == ChatState::kChatStateListening)
+    //         {
+    //             std::string greet = "火灾警报解除";
+    //             app->protocol_->SendGreetContent(greet);
+    //         }
             
-        }else if (app->flame_warning == true && app->flameWarning == true) //火焰值超标，且已发送过警报
-        {
-            vTaskDelay(pdMS_TO_TICKS(200));
-            if(app->GetChatState() == ChatState::kChatStateIdle)//空闲
-            {
-                app->StartListening();
-                vTaskDelay(pdMS_TO_TICKS(200));
-                while (app->GetChatState() != ChatState::kChatStateListening)
-                {
-                    vTaskDelay(pdMS_TO_TICKS(120));
-                }
-                if (app->GetChatState() == ChatState::kChatStateListening)
-                {
-                    vTaskDelay(pdMS_TO_TICKS(120));
-                    std::string greet = "火灾警报";
-                    app->protocol_->SendGreetContent(greet);
-                }
-            }
-        }
-        vTaskDelay(pdMS_TO_TICKS(500));
-        if (app->flame_warning ==true)
-        {
+    //     }else if (app->flame_warning == true && app->flameWarning == true) //火焰值超标，且已发送过警报
+    //     {
+    //         vTaskDelay(pdMS_TO_TICKS(200));
+    //         if(app->GetChatState() == ChatState::kChatStateIdle)//空闲
+    //         {
+    //             app->StartListening();
+    //             vTaskDelay(pdMS_TO_TICKS(200));
+    //             while (app->GetChatState() != ChatState::kChatStateListening)
+    //             {
+    //                 vTaskDelay(pdMS_TO_TICKS(120));
+    //             }
+    //             if (app->GetChatState() == ChatState::kChatStateListening)
+    //             {
+    //                 vTaskDelay(pdMS_TO_TICKS(120));
+    //                 std::string greet = "火灾警报";
+    //                 app->protocol_->SendGreetContent(greet);
+    //             }
+    //         }
+    //     }
+    //     vTaskDelay(pdMS_TO_TICKS(500));
+    //     if (app->flame_warning ==true)
+    //     {
             
-            if (flag == false)
-            {
-                app->sendCjsonToSerial( "WS2812", "write", "rgb", "2016", "1");
-                flag = true;
-            }else
-            {
-                app->sendCjsonToSerial( "WS2812", "write", "rgb", "0", "1");
-                flag = false;
-            }
+    //         if (flag == false)
+    //         {
+    //             app->sendCjsonToSerial( "WS2812", "write", "rgb", "2016", "1");
+    //             flag = true;
+    //         }else
+    //         {
+    //             app->sendCjsonToSerial( "WS2812", "write", "rgb", "0", "1");
+    //             flag = false;
+    //         }
             
             
-        }
+    //     }
         
-        }
+    //     }
         
         
 
-    },
-    "FlameWarningTask",
-    4096,
-    this,
-    1,
-    nullptr
-    );
+    // },
+    // "FlameWarningTask",
+    // 4096,
+    // this,
+    // 1,
+    // nullptr
+    // );
 
 
 
@@ -1158,22 +1158,22 @@ void Application::ProcessReceivedJson(cJSON *root)
     //     }
     //     return;
     // }
-    auto name = cJSON_GetObjectItem(root, "name");////{"name":"Flame","type":"sensor","property":"raw","value":"4095"}
-    if (!std::string(name->valuestring).compare("Flame"))
-    {
-        auto value = cJSON_GetObjectItem(root, "value");
-        int intValue = std::stoi(value->valuestring);
-        printf("Flame value: %d\n", intValue);
-        if (intValue <= 100)
-        {
-            //火焰报警
-            flame_warning = true;
-        }else if (intValue >= 4000)
-        {
-            //取消火焰报警
-            flame_warning = false;
-        }
-    }
+    // auto name = cJSON_GetObjectItem(root, "name");////{"name":"Flame","type":"sensor","property":"raw","value":"4095"}
+    // if (!std::string(name->valuestring).compare("Flame"))
+    // {
+    //     auto value = cJSON_GetObjectItem(root, "value");
+    //     int intValue = std::stoi(value->valuestring);
+    //     printf("Flame value: %d\n", intValue);
+    //     if (intValue <= 100)
+    //     {
+    //         //火焰报警
+    //         // flame_warning = true;
+    //     }else if (intValue >= 4000)
+    //     {
+    //         //取消火焰报警
+    //         // flame_warning = false;
+    //     }
+    // }
     
     if (!test_yb)
     {
