@@ -30,7 +30,9 @@ static std::string csq_to_string(int csq) {
     }
     return "Invalid";
 }
-
+// std::string Ml307Board::GetBoardType() {
+//     return "ml307";
+// }
 
 Ml307Board::Ml307Board(gpio_num_t tx_pin, gpio_num_t rx_pin, size_t rx_buffer_size) : modem_(tx_pin, rx_pin, rx_buffer_size) {
 }

@@ -35,6 +35,19 @@ static std::string rssi_to_string(int rssi) {
     }
 }
 
+
+WifiBoard::WifiBoard() {
+    Settings settings("wifi", true);
+    wifi_config_mode_ = settings.GetInt("force_ap") == 1;
+    if (wifi_config_mode_) {
+        ESP_LOGI(TAG, "force_ap is set to 1, reset to 0");
+        settings.SetInt("force_ap", 0);
+    }
+}
+
+// std::string WifiBoard::GetBoardType() {
+//     return "wifi";
+// }
 void WifiBoard::StartNetwork() {
     auto& application = Application::GetInstance();
     auto display = Board::GetInstance().GetDisplay();

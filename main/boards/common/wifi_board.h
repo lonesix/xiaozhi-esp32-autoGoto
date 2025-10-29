@@ -10,6 +10,8 @@ protected:
     virtual std::string GetBoardJson() override;
 
 public:
+    WifiBoard();
+    // virtual std::string GetBoardType() override;
     virtual void StartNetwork() override;
     virtual Http* CreateHttp() override;
     virtual WebSocket* CreateWebSocket() override;
@@ -19,6 +21,7 @@ public:
     virtual const char* GetNetworkStateIcon() override;
     virtual void SetPowerSaveMode(bool enabled) override;
     virtual void ResetWifiConfiguration();
+    virtual AudioCodec* GetAudioCodec() override { return nullptr; }
 };
 
 #endif // WIFI_BOARD_H

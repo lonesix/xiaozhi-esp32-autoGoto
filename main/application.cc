@@ -1350,3 +1350,8 @@ void Application::CameraProcessReceivedJson(cJSON *root)
 
     protocol_->SendIotContent(camera_name->valuestring, camera_type->valuestring, camera_property->valuestring, camera_value->valuestring);
 }
+
+void Application::Reboot() {
+    ESP_LOGI(TAG, "Rebooting...");
+    esp_restart();
+}

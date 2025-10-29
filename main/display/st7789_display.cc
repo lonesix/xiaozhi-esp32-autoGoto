@@ -601,6 +601,12 @@ void St7789Display::SetupUI()
         lv_obj_set_style_text_font(ui_QRcodeLabel, &font_puhui_14_1, LV_PART_MAIN | LV_STATE_DEFAULT);
         lv_obj_set_style_text_font(ui_emotionlabel, &font_awesome_30_4, LV_PART_MAIN | LV_STATE_DEFAULT);
     #endif
+        // auto screen = lv_screen_active();
+
+        preview_image_ = lv_img_create(NULL);
+        lv_obj_set_size(preview_image_, width_ * 0.5, height_ * 0.5);
+        lv_obj_align(preview_image_, LV_ALIGN_CENTER, 0, 0);
+        lv_obj_add_flag(preview_image_, LV_OBJ_FLAG_HIDDEN);
         /*设置textarea_text*/
         // lv_textarea_set_text(ui_AITextArea, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
         /*设置textarea_text*/
@@ -715,4 +721,30 @@ void St7789Display::SetupUI()
     // lv_obj_set_style_text_color(status_label_, lv_color_make(0x99, 0xff, 0x33), 0);
     // lv_obj_set_style_text_color(mute_label_, lv_color_white(), 0);
     // lv_obj_set_style_text_color(battery_label_, lv_color_white(), 0);
+}
+
+void St7789Display::SetPreviewImage(const lv_img_dsc_t* img_dsc) {
+    DisplayLockGuard lock(this);
+    if (preview_image_ == nullptr) {
+        return;
+    }
+    
+    if (img_dsc != nullptr) {
+        // lv_img_set_angle
+        // zoom factor 0.5
+        lv_img_set_zoom(preview_image_, 128 * width_ / img_dsc->header.w);
+        // 设置图片源并显示预览图片
+        lv_img_set_src(preview_image_, img_dsc);
+        lv_obj_clear_flag(preview_image_, LV_OBJ_FLAG_HIDDEN);
+        // 隐藏emotion_label_
+        if (emotion_label_ != nullptr) {
+            lv_obj_add_flag(emotion_label_, LV_OBJ_FLAG_HIDDEN);
+        }
+    } else {
+        // 隐藏预览图片并显示emotion_label_
+        lv_obj_add_flag(preview_image_, LV_OBJ_FLAG_HIDDEN);
+        if (emotion_label_ != nullptr) {
+            lv_obj_clear_flag(emotion_label_, LV_OBJ_FLAG_HIDDEN);
+        }
+    }
 }

@@ -31,7 +31,8 @@ private:
     lv_obj_t* content_ = nullptr;
     lv_obj_t* container_ = nullptr;
     lv_obj_t* side_bar_ = nullptr;
-
+    lv_obj_t* preview_image_ = nullptr;
+    
     void InitializeBacklight(gpio_num_t backlight_pin);
     virtual void SetBacklight(uint8_t brightness);
     void SetupUI();
@@ -57,7 +58,7 @@ public:
                   int width, int height,  int offset_x, int offset_y, bool mirror_x, bool mirror_y, bool swap_xy);
     ~St7789Display();
     bool kaijiGif_finish_flag = false;
-    
+    virtual void SetPreviewImage(const lv_img_dsc_t* img_dsc) override; // 设置预览图片
     virtual bool kaijiFinishFlag();
 };
 

@@ -21,7 +21,7 @@ public:
     virtual void SetBacklight(uint8_t brightness);
     virtual void GotoQRcodePage();
     virtual void GotoMainPage();
-
+    virtual void SetPreviewImage(const lv_img_dsc_t* image);
     virtual bool kaijiFinishFlag();
 
     int width() const { return width_; }

@@ -82,6 +82,10 @@ void Display::ShowNotification(const std::string &notification, int duration_ms)
     ESP_ERROR_CHECK(esp_timer_start_once(notification_timer_, duration_ms * 1000));
 }
 
+void Display::SetPreviewImage(const lv_img_dsc_t* image) {
+    // Do nothing
+}
+
 void Display::Update() {
     if (mute_label_ == nullptr) {
         return;

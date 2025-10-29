@@ -93,7 +93,7 @@ public:
     void sendCjsonToCameraSerial(const char *name, const char *type, const char *property, const char *value, const char *session_id);
     void ProcessReceivedJson(cJSON* root);
     void CameraProcessReceivedJson(cJSON* root);
-
+    void Reboot();
 
 private:
     Application();

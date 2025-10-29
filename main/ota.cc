@@ -36,85 +36,85 @@ void Ota::SetPostData(const std::string& post_data) {
 }
 
 bool Ota::CheckVersion() {
-    current_version_ = esp_app_get_description()->version;
-    ESP_LOGI(TAG, "Current version: %s", current_version_.c_str());
+    // current_version_ = esp_app_get_description()->version;
+    // ESP_LOGI(TAG, "Current version: %s", current_version_.c_str());
 
-    if (check_version_url_.length() < 10) {
-        ESP_LOGE(TAG, "Check version URL is not properly set");
-        return false;
-    }
+    // if (check_version_url_.length() < 10) {
+    //     ESP_LOGE(TAG, "Check version URL is not properly set");
+    //     return false;
+    // }
 
-    auto http = Board::GetInstance().CreateHttp();
-    for (const auto& header : headers_) {
-        http->SetHeader(header.first, header.second);
-    }
+    // auto http = Board::GetInstance().CreateHttp();
+    // for (const auto& header : headers_) {
+    //     http->SetHeader(header.first, header.second);
+    // }
 
-    http->SetHeader("Content-Type", "application/json");
-    std::string method = post_data_.length() > 0 ? "POST" : "GET";
-    if (!http->Open(method, check_version_url_, post_data_)) {
-        ESP_LOGE(TAG, "Failed to open HTTP connection");
-        delete http;
-        return false;
-    }
+    // http->SetHeader("Content-Type", "application/json");
+    // std::string method = post_data_.length() > 0 ? "POST" : "GET";
+    // if (!http->Open(method, check_version_url_, post_data_)) {
+    //     ESP_LOGE(TAG, "Failed to open HTTP connection");
+    //     delete http;
+    //     return false;
+    // }
 
-    auto response = http->GetBody();
-    http->Close();
-    delete http;
+    // auto response = http->GetBody();
+    // http->Close();
+    // delete http;
 
-    // Response: { "firmware": { "version": "1.0.0", "url": "http://" } }
-    // Parse the JSON response and check if the version is newer
-    // If it is, set has_new_version_ to true and store the new version and URL
+    // // Response: { "firmware": { "version": "1.0.0", "url": "http://" } }
+    // // Parse the JSON response and check if the version is newer
+    // // If it is, set has_new_version_ to true and store the new version and URL
     
-    cJSON *root = cJSON_Parse(response.c_str());
-    if (root == NULL) {
-        ESP_LOGE(TAG, "Failed to parse JSON response");
-        return false;
-    }
+    // cJSON *root = cJSON_Parse(response.c_str());
+    // if (root == NULL) {
+    //     ESP_LOGE(TAG, "Failed to parse JSON response");
+    //     return false;
+    // }
 
-    cJSON *mqtt = cJSON_GetObjectItem(root, "mqtt");
-    if (mqtt != NULL) {
-        Settings settings("mqtt", true);
-        cJSON *item = NULL;
-        cJSON_ArrayForEach(item, mqtt) {
-            if (item->type == cJSON_String) {
-                if (settings.GetString(item->string) != item->valuestring) {
-                    settings.SetString(item->string, item->valuestring);
-                }
-            }
-        }
-        has_mqtt_config_ = true;
-    }
+    // cJSON *mqtt = cJSON_GetObjectItem(root, "mqtt");
+    // if (mqtt != NULL) {
+    //     Settings settings("mqtt", true);
+    //     cJSON *item = NULL;
+    //     cJSON_ArrayForEach(item, mqtt) {
+    //         if (item->type == cJSON_String) {
+    //             if (settings.GetString(item->string) != item->valuestring) {
+    //                 settings.SetString(item->string, item->valuestring);
+    //             }
+    //         }
+    //     }
+    //     has_mqtt_config_ = true;
+    // }
 
-    cJSON *firmware = cJSON_GetObjectItem(root, "firmware");
-    if (firmware == NULL) {
-        ESP_LOGE(TAG, "Failed to get firmware object");
-        cJSON_Delete(root);
-        return false;
-    }
-    cJSON *version = cJSON_GetObjectItem(firmware, "version");
-    if (version == NULL) {
-        ESP_LOGE(TAG, "Failed to get version object");
-        cJSON_Delete(root);
-        return false;
-    }
-    cJSON *url = cJSON_GetObjectItem(firmware, "url");
-    if (url == NULL) {
-        ESP_LOGE(TAG, "Failed to get url object");
-        cJSON_Delete(root);
-        return false;
-    }
+    // cJSON *firmware = cJSON_GetObjectItem(root, "firmware");
+    // if (firmware == NULL) {
+    //     ESP_LOGE(TAG, "Failed to get firmware object");
+    //     cJSON_Delete(root);
+    //     return false;
+    // }
+    // cJSON *version = cJSON_GetObjectItem(firmware, "version");
+    // if (version == NULL) {
+    //     ESP_LOGE(TAG, "Failed to get version object");
+    //     cJSON_Delete(root);
+    //     return false;
+    // }
+    // cJSON *url = cJSON_GetObjectItem(firmware, "url");
+    // if (url == NULL) {
+    //     ESP_LOGE(TAG, "Failed to get url object");
+    //     cJSON_Delete(root);
+    //     return false;
+    // }
 
-    firmware_version_ = version->valuestring;
-    firmware_url_ = url->valuestring;
-    cJSON_Delete(root);
+    // firmware_version_ = version->valuestring;
+    // firmware_url_ = url->valuestring;
+    // cJSON_Delete(root);
 
-    // Check if the version is newer, for example, 0.1.0 is newer than 0.0.1
-    has_new_version_ = IsNewVersionAvailable(current_version_, firmware_version_);
-    if (has_new_version_) {
-        ESP_LOGI(TAG, "New version available: %s", firmware_version_.c_str());
-    } else {
-        ESP_LOGI(TAG, "Current is the latest version");
-    }
+    // // Check if the version is newer, for example, 0.1.0 is newer than 0.0.1
+    // has_new_version_ = IsNewVersionAvailable(current_version_, firmware_version_);
+    // if (has_new_version_) {
+    //     ESP_LOGI(TAG, "New version available: %s", firmware_version_.c_str());
+    // } else {
+    //     ESP_LOGI(TAG, "Current is the latest version");
+    // }
     return true;
 }
 

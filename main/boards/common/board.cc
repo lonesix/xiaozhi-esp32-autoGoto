@@ -10,7 +10,9 @@
 
 Board::Board() {
 }
-
+Camera* Board::GetCamera() {
+    return nullptr;
+}
 bool Board::GetBatteryLevel(int &level, bool& charging) {
     return false;
 }
@@ -111,4 +113,9 @@ std::string Board::GetJson() {
     // Close the JSON object
     json += "}";
     return json;
+}
+
+Led* Board::GetBuiltinLed() {
+    static NoLed led;
+    return &led;
 }

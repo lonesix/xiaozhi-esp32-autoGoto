@@ -44,4 +44,10 @@ private:
     void OnBlinkTimer();
 };
 
+class NoLed : public Led {
+    
+    public:
+    NoLed() : Led(GPIO_NUM_NC) {}  // 使用一个无效的GPIO号表示没有LED
+        // virtual void OnStateChanged() override {}
+    };
 #endif // _LED_H_
