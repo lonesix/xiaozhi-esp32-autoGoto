@@ -18,7 +18,9 @@
 
 #include <wifi_station.h>
 #include <wifi_configuration_ap.h>
+#include <ssid_manager.h>
 
+#include "assets/lang_config.h"
 static const char *TAG = "WifiBoard";
 
 static std::string rssi_to_string(int rssi) {
@@ -48,41 +50,119 @@ WifiBoard::WifiBoard() {
 // std::string WifiBoard::GetBoardType() {
 //     return "wifi";
 // }
-void WifiBoard::StartNetwork() {
+
+void WifiBoard::EnterWifiConfigMode() {
     auto& application = Application::GetInstance();
+    // application.SetDeviceState(kDeviceStateWifiConfiguring);
+
+    auto& wifi_ap = WifiConfigurationAp::GetInstance();
+    wifi_ap.SetLanguage(Lang::CODE);
+    wifi_ap.SetSsidPrefix("Qianji");
+    wifi_ap.Start();
+
+    // 播报配置 WiFi 的提示
+    application.Alert("Info", "Configuring WiFi");
+
+    // 显示 WiFi 配置 AP 的 SSID 和 Web 服务器 URL
+    std::string hint = "请在手机上连接热点 ";
+    hint += wifi_ap.GetSsid();
+    hint += "，然后打开浏览器访问 ";
+    hint += wifi_ap.GetWebServerUrl();
+
     auto display = Board::GetInstance().GetDisplay();
-    auto builtin_led = Board::GetInstance().GetBuiltinLed();
+
+    display->SetStatus(hint);
+    display->GotoQRcodePage();
+    
+    
+    // Wait forever until reset after configuration
+    while (true) {
+        int free_sram = heap_caps_get_free_size(MALLOC_CAP_INTERNAL);
+        int min_free_sram = heap_caps_get_minimum_free_size(MALLOC_CAP_INTERNAL);
+        ESP_LOGI(TAG, "Free internal: %u minimal internal: %u", free_sram, min_free_sram);
+        vTaskDelay(pdMS_TO_TICKS(10000));
+    }
+}
+void WifiBoard::StartNetwork() {
+
+    // User can press BOOT button while starting to enter WiFi configuration mode
+    if (wifi_config_mode_) {
+        EnterWifiConfigMode();
+        return;
+    }
+
+    // If no WiFi SSID is configured, enter WiFi configuration mode
+    auto& ssid_manager = SsidManager::GetInstance();
+    auto ssid_list = ssid_manager.GetSsidList();
+    if (ssid_list.empty()) {
+        wifi_config_mode_ = true;
+        EnterWifiConfigMode();
+        return;
+    }
+
+    auto& wifi_station = WifiStation::GetInstance();
+    wifi_station.OnScanBegin([this]() {
+        auto display = Board::GetInstance().GetDisplay();
+        display->ShowNotification(Lang::Strings::SCANNING_WIFI, 30000);
+    });
+    wifi_station.OnConnect([this](const std::string& ssid) {
+        auto display = Board::GetInstance().GetDisplay();
+        std::string notification = Lang::Strings::CONNECT_TO;
+        notification += ssid;
+        notification += "...";
+        display->ShowNotification(notification.c_str(), 30000);
+    });
+    wifi_station.OnConnected([this](const std::string& ssid) {
+        auto display = Board::GetInstance().GetDisplay();
+        std::string notification = Lang::Strings::CONNECTED_TO;
+        notification += ssid;
+        display->ShowNotification(notification.c_str(), 30000);
+    });
+    wifi_station.Start();
 
     // Try to connect to WiFi, if failed, launch the WiFi configuration AP
-    auto& wifi_station = WifiStation::GetInstance();
-    display->SetStatus(std::string("正在连接 ") + wifi_station.GetSsid());
-    wifi_station.Start();
-    if (!wifi_station.IsConnected()) {
-        builtin_led->SetBlue();
-        builtin_led->Blink(1000, 500);
-        auto& wifi_ap = WifiConfigurationAp::GetInstance();
-        wifi_ap.SetSsidPrefix("Qianji");
-        wifi_ap.Start();
-        
-        // 播报配置 WiFi 的提示
-        application.Alert("Info", "Configuring WiFi");
-
-        // 显示 WiFi 配置 AP 的 SSID 和 Web 服务器 URL
-        std::string hint = "请在手机上连接热点 ";
-        hint += wifi_ap.GetSsid();
-        hint += "，然后打开浏览器访问 ";
-        hint += wifi_ap.GetWebServerUrl();
-
-        display->SetStatus(hint);
-        display->GotoQRcodePage();
-        // Wait forever until reset after configuration
-        while (true) {
-            int free_sram = heap_caps_get_free_size(MALLOC_CAP_INTERNAL);
-            int min_free_sram = heap_caps_get_minimum_free_size(MALLOC_CAP_INTERNAL);
-            ESP_LOGI(TAG, "Free internal: %u minimal internal: %u", free_sram, min_free_sram);
-            vTaskDelay(pdMS_TO_TICKS(10000));
-        }
+    if (!wifi_station.WaitForConnected(60 * 1000)) {
+        wifi_station.Stop();
+        wifi_config_mode_ = true;
+        EnterWifiConfigMode();
+        return;
     }
+
+
+    // auto& application = Application::GetInstance();
+    // auto display = Board::GetInstance().GetDisplay();
+    // auto builtin_led = Board::GetInstance().GetBuiltinLed();
+
+    // // Try to connect to WiFi, if failed, launch the WiFi configuration AP
+    // auto& wifi_station = WifiStation::GetInstance();
+    // display->SetStatus(std::string("正在连接 ") + wifi_station.GetSsid());
+    // wifi_station.Start();
+    // if (!wifi_station.WaitForConnected(60 * 1000)) {
+    //     builtin_led->SetBlue();
+    //     builtin_led->Blink(1000, 500);
+    //     auto& wifi_ap = WifiConfigurationAp::GetInstance();
+    //     wifi_ap.SetSsidPrefix("Qianji");
+    //     wifi_ap.Start();
+        
+    //     // 播报配置 WiFi 的提示
+    //     application.Alert("Info", "Configuring WiFi");
+
+    //     // 显示 WiFi 配置 AP 的 SSID 和 Web 服务器 URL
+    //     std::string hint = "请在手机上连接热点 ";
+    //     hint += wifi_ap.GetSsid();
+    //     hint += "，然后打开浏览器访问 ";
+    //     hint += wifi_ap.GetWebServerUrl();
+
+    //     display->SetStatus(hint);
+    //     display->GotoQRcodePage();
+    //     // Wait forever until reset after configuration
+    //     while (true) {
+    //         int free_sram = heap_caps_get_free_size(MALLOC_CAP_INTERNAL);
+    //         int min_free_sram = heap_caps_get_minimum_free_size(MALLOC_CAP_INTERNAL);
+    //         ESP_LOGI(TAG, "Free internal: %u minimal internal: %u", free_sram, min_free_sram);
+    //         vTaskDelay(pdMS_TO_TICKS(10000));
+    //     }
+    // }
 }
 
 Http* WifiBoard::CreateHttp() {
@@ -166,13 +246,16 @@ void WifiBoard::SetPowerSaveMode(bool enabled) {
 }
 
 void WifiBoard::ResetWifiConfiguration() {
-    // Reset the wifi station
+
+    // Set a flag and reboot the device to enter the network configuration mode
     {
         Settings settings("wifi", true);
-        settings.EraseAll();
+        settings.SetInt("force_ap", 1);
     }
     GetDisplay()->ShowNotification("已重置 WiFi...");
     vTaskDelay(pdMS_TO_TICKS(1000));
     // Reboot the device
     esp_restart();
+
+
 }

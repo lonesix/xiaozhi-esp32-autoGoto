@@ -16,7 +16,8 @@ extern "C" void app_main(void)
     // esp_log_level_set("*", ESP_LOG_NONE);
 
     // 如果需要重新开启某个组件的日志输出
-    // esp_log_level_set("COMPONENT_TAG", ESP_LOG_INFO);
+    // esp_log_level_set("camera", ESP_LOG_INFO);
+    esp_log_level_set("camera", ESP_LOG_DEBUG); // 打开摄像头日志
 
     // Initialize the default event loop
     ESP_ERROR_CHECK(esp_event_loop_create_default());

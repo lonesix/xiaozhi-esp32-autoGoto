@@ -27,7 +27,7 @@ Esp32Camera::Esp32Camera(const camera_config_t& config) {
     // 初始化预览图片的内存
     memset(&preview_image_, 0, sizeof(preview_image_));
     // preview_image_.header.magic = LV_IMAGE_HEADER_MAGIC;
-    // preview_image_.header.cf = LV_COLOR_FORMAT_RGB565;
+    preview_image_.header.cf = LV_IMG_CF_TRUE_COLOR;
     // preview_image_.header.flags = LV_IMAGE_FLAGS_ALLOCATED | LV_IMAGE_FLAGS_MODIFIABLE;
 
     switch (config.frame_size) {
@@ -101,7 +101,7 @@ bool Esp32Camera::Capture() {
             return false;
         }
     }
-
+    
     // 如果预览图片 buffer 为空，则跳过预览
     // 但仍返回 true，因为此时图像可以上传至服务器
     if (preview_image_.data_size == 0) {
@@ -121,11 +121,91 @@ bool Esp32Camera::Capture() {
         for (size_t i = 0; i < pixel_count; i++) {
             // 交换每个16位字内的字节
             dst[i] = __builtin_bswap16(src[i]);
+            // dst[i] = src[i];
         }
         display->SetPreviewImage(&preview_image_);
     }
     return true;
 }
+#include <esp_pthread.h>
+void Esp32Camera::testCameraToDisplayThread()
+{
+
+    testCameraToDisplay();
+    // Start a task to receive data with stack size
+    // esp_pthread_cfg_t cfg = esp_pthread_get_default_config();
+    // cfg.thread_name = "tool_call";
+    // cfg.stack_size = 5000;
+    // cfg.prio = 1;
+    // esp_pthread_set_cfg(&cfg);
+
+    // // Use a thread to call the tool to avoid blocking the main thread
+    // tool_call_thread_ = std::thread([this]() {
+    //     try {
+    //         testCameraToDisplay();
+    //         // ReplyResult(id, (*tool_iter)->Call(arguments));
+    //     } catch (const std::exception& e) {
+    //         ESP_LOGE(TAG, "tools/call: %s", e.what());
+    //         // ReplyError(id, e.what());
+    //     }
+    // });
+    // tool_call_thread_.detach();
+}
+bool Esp32Camera::testCameraToDisplay() {
+
+
+
+
+    int frames_to_get = 1;
+    // Try to get a stable frame
+    for (int i = 0; i < frames_to_get; i++) {
+        if (fb_ != nullptr) {
+            esp_camera_fb_return(fb_);
+        }
+        fb_ = esp_camera_fb_get();
+        if (fb_ == nullptr) {
+            ESP_LOGE(TAG, "Camera capture failed");
+            return false;
+        }
+    }
+    ESP_LOGI(TAG, "cam fmt=%d", fb_->format);
+    ESP_LOGE(TAG, "Camera capture success");
+    // 如果预览图片 buffer 为空，则跳过预览
+    // 但仍返回 true，因为此时图像可以上传至服务器
+    if (preview_image_.data_size == 0) {
+        ESP_LOGW(TAG, "Skip preview because of unsupported frame size");
+        return true;
+    }
+    if (preview_image_.data == nullptr) {
+        ESP_LOGE(TAG, "Preview image data is not initialized");
+        return true;
+    }
+    // 显示预览图片
+    auto display = Board::GetInstance().GetDisplay();
+    if (display != nullptr) {
+        auto src = (uint16_t*)fb_->buf;
+        auto dst = (uint16_t*)preview_image_.data;
+        size_t pixel_count = fb_->len / 2;
+        ESP_LOGE(TAG, "pixel_count=%d", pixel_count);
+        for (size_t i = 0; i < pixel_count; i++) {
+            // 交换每个16位字内的字节
+            // dst[i] = __builtin_bswap16(src[i]);
+            dst[i] = src[i];
+        /* 放在你拷贝循环里，一行搞定所有位域错误 */
+        // uint16_t v = src[i];
+        // v = ((v & 0x001F) << 11) | (v & 0x07E0) | ((v & 0xF800) >> 11); // R<->B
+        // // v &= 0x7FFF;                           // 清 Alpha
+        // dst[i] = __builtin_bswap16(v);
+            // dst[i] = __builtin_bswap16(0xF800);
+        }
+        ESP_LOGE(TAG, "SetPreviewImage");
+        // ESP_LOGI(TAG, "stride=%d, width=%d, height=%d",
+        //     fb_->len / 2 / fb_->height, fb_->width, fb_->height);
+        display->SetPreviewImage(&preview_image_);
+    }
+    return true;
+}
+
 bool Esp32Camera::SetHMirror(bool enabled) {
     sensor_t *s = esp_camera_sensor_get();
     if (s == nullptr) {

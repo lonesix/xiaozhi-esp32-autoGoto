@@ -40,11 +40,11 @@ static const char* const STATE_STRINGS[] = {
 Application::Application() : background_task_(4096 * 8) {
     event_group_ = xEventGroupCreate();
 
-    uc_uart = new UartComm(UART_NUM, TX_PIN, RX_PIN, BAUD_RATE, BUF_SIZE);
-    uc_uart->init();
+    // uc_uart = new UartComm(UART_NUM, TX_PIN, RX_PIN, BAUD_RATE, BUF_SIZE);
+    // uc_uart->init();
     
-    camera_uart = new UartComm(CAMERA_UART_NUM, CAMERA_TX_PIN, CAMERA_RX_PIN, CAMERA_BAUD_RATE, CAMERA_BUF_SIZE);
-    camera_uart->init();
+    // camera_uart = new UartComm(CAMERA_UART_NUM, CAMERA_TX_PIN, CAMERA_RX_PIN, CAMERA_BAUD_RATE, CAMERA_BUF_SIZE);
+    // camera_uart->init();
     
 
 
@@ -294,32 +294,32 @@ void Application::Start()
     //     vTaskDelete(NULL);
     // }, "check_new_version", 4096 * 2, this, 1, nullptr);
 
-    // 启动串口接收任务
-    xTaskCreate([](void *arg)
-    {
-        Application* app = (Application*)arg;
-        while (true) {
-            app->uc_uart->receiveDataCjson();
-            vTaskDelay(pdMS_TO_TICKS(10));  // 每 ms 检查一次接收的数据
-    } }, "uart_receive_task", 4096, this, 1, nullptr);
+    // // 启动串口接收任务
+    // xTaskCreate([](void *arg)
+    // {
+    //     Application* app = (Application*)arg;
+    //     while (true) {
+    //         app->uc_uart->receiveDataCjson();
+    //         vTaskDelay(pdMS_TO_TICKS(10));  // 每 ms 检查一次接收的数据
+    // } }, "uart_receive_task", 4096, this, 1, nullptr);
 
-    // 启动Camera串口接收任务
-    xTaskCreate([](void *arg)
-    {
-        Application* app = (Application*)arg;
-        while (true) {
-            app->camera_uart->receiveCameraDataCjson();
-            vTaskDelay(pdMS_TO_TICKS(10));  // 每 ms 检查一次接收的数据
-    } }, "camera_uart_receive_task", 4096, this, 1, nullptr);
+    // // 启动Camera串口接收任务
+    // xTaskCreate([](void *arg)
+    // {
+    //     Application* app = (Application*)arg;
+    //     while (true) {
+    //         app->camera_uart->receiveCameraDataCjson();
+    //         vTaskDelay(pdMS_TO_TICKS(10));  // 每 ms 检查一次接收的数据
+    // } }, "camera_uart_receive_task", 4096, this, 1, nullptr);
     // 自定义语音唤醒
-    External_voice_wake_up = new Button(EXTERNAL_VOICE_WAKE_UP_GPIO, 1);
+//     External_voice_wake_up = new Button(EXTERNAL_VOICE_WAKE_UP_GPIO, 1);
 
-    External_voice_wake_up->OnPressDown([this]() {
-    ESP_LOGI(TAG, "VoiceButton released");
-    wake_word_detect_.buttonFlag = true;
-    // Application::GetInstance().StartListening();
+//     External_voice_wake_up->OnPressDown([this]() {
+//     ESP_LOGI(TAG, "VoiceButton released");
+//     wake_word_detect_.buttonFlag = true;
+//     // Application::GetInstance().StartListening();
     
-});
+// });
     //火警任务
     
     // xTaskCreate([](void *arg)
@@ -420,79 +420,81 @@ void Application::Start()
 
 
 
-    // ADC按键
-    const uint16_t thresholds[] = {
-    // (uint16_t)((float)0.38 / 3.3 * 4096-150), // 按键1的阈值
-    // (uint16_t)((float)0.82 / 3.3 * 4096-150), // 按键2的阈值
-    // (uint16_t)((float)1.18 / 3.3 * 4096-180), // 按键3的阈值
-    // (uint16_t)((float)1.57 / 3.3 * 4096-220), // 按键4的阈值
-    // (uint16_t)((float)1.98 / 3.3 * 4096-250), // 按键5的阈值
-    // (uint16_t)((float)2.38 / 3.3 * 4096-250), // 按键6的阈值
-    380, // 按键1的阈值
-    820, // 按键2的阈值
-    1180, // 按键3的阈值
-    1570, // 按键4的阈值
-    1980, // 按键5的阈值
-    2380, // 按键6的阈值
-};
+// ADC按键任务
+//     const uint16_t thresholds[] = {
+//     // (uint16_t)((float)0.38 / 3.3 * 4096-150), // 按键1的阈值
+//     // (uint16_t)((float)0.82 / 3.3 * 4096-150), // 按键2的阈值
+//     // (uint16_t)((float)1.18 / 3.3 * 4096-180), // 按键3的阈值
+//     // (uint16_t)((float)1.57 / 3.3 * 4096-220), // 按键4的阈值
+//     // (uint16_t)((float)1.98 / 3.3 * 4096-250), // 按键5的阈值
+//     // (uint16_t)((float)2.38 / 3.3 * 4096-250), // 按键6的阈值
+//     380, // 按键1的阈值
+//     820, // 按键2的阈值
+//     1180, // 按键3的阈值
+//     1570, // 按键4的阈值
+//     1980, // 按键5的阈值
+//     2380, // 按键6的阈值
+// };
 
-    size_t num_buttons = sizeof(thresholds) / sizeof(thresholds[0]);
+//     size_t num_buttons = sizeof(thresholds) / sizeof(thresholds[0]);
 
-    // 创建ADCButtonNetwork对象，并自动启动任务,io4
-    adc_button = new ADCButtonNetwork("ADCButtonTask", ADC_UNIT_1, ADC_CHANNEL_3, thresholds, num_buttons);
-            // 注册回调函数
-    adc_button->registerCallback(0, []() { 
-        ESP_LOGI(ADCButtonNetwork::TAG1, "Button 1 Callback Executed");
-        // 在这里添加按钮1被按下时的处理逻辑
-        // Application::GetInstance().StartListening();
-        // vTaskDelay(pdMS_TO_TICKS(120));
-        // Application::GetInstance().StopListening();
-        });
-    adc_button->registerCallback(1, []() {
-        ESP_LOGI(ADCButtonNetwork::TAG1, "Button 2 Callback Executed");
-        // 在这里添加按钮2被按下时的处理逻辑
+//     // 创建ADCButtonNetwork对象，并自动启动任务,io4
+//     adc_button = new ADCButtonNetwork("ADCButtonTask", ADC_UNIT_1, ADC_CHANNEL_3, thresholds, num_buttons);
+//             // 注册回调函数
+//     adc_button->registerCallback(0, []() { 
+//         ESP_LOGI(ADCButtonNetwork::TAG1, "Button 1 Callback Executed");
+//         // 在这里添加按钮1被按下时的处理逻辑
+//         // Application::GetInstance().StartListening();
+//         // vTaskDelay(pdMS_TO_TICKS(120));
+//         // Application::GetInstance().StopListening();
+//         });
+//     adc_button->registerCallback(1, []() {
+//         ESP_LOGI(ADCButtonNetwork::TAG1, "Button 2 Callback Executed");
+//         // 在这里添加按钮2被按下时的处理逻辑
 
-    }
-    );
-    adc_button->registerCallback(2, []() {
-        ESP_LOGI(ADCButtonNetwork::TAG1, "Button 3 Callback Executed");
-        // 在这里添加按钮3被按下时的处理逻辑
-        Application::GetInstance().StartListening();
-        vTaskDelay(pdMS_TO_TICKS(200));
-        while (Application::GetInstance().GetChatState() != ChatState::kChatStateListening)
-        {
-            vTaskDelay(pdMS_TO_TICKS(120));
-        }
+//     }
+//     );
+//     adc_button->registerCallback(2, []() {
+//         ESP_LOGI(ADCButtonNetwork::TAG1, "Button 3 Callback Executed");
+//         // 在这里添加按钮3被按下时的处理逻辑
+//         Application::GetInstance().StartListening();
+//         vTaskDelay(pdMS_TO_TICKS(200));
+//         while (Application::GetInstance().GetChatState() != ChatState::kChatStateListening)
+//         {
+//             vTaskDelay(pdMS_TO_TICKS(120));
+//         }
         
-        if (Application::GetInstance().GetChatState() == ChatState::kChatStateListening)
-        {
-            std::string greet = "高温预警，请你发出一连串警报拟声词重复十次并附带高温警报提示！";
-            Application::GetInstance().protocol_->SendGreetContent(greet);
-        }
+//         if (Application::GetInstance().GetChatState() == ChatState::kChatStateListening)
+//         {
+//             std::string greet = "高温预警，请你发出一连串警报拟声词重复十次并附带高温警报提示！";
+//             Application::GetInstance().protocol_->SendGreetContent(greet);
+//         }
         
-    }
-    );
-    adc_button->registerCallback(3, []() {
-        ESP_LOGI(ADCButtonNetwork::TAG1, "Button 4 Callback Executed");
-        // 在这里添加按钮4被按下时的处理逻辑
-    }
-    );
-    adc_button->registerCallback(4, []() {
-        ESP_LOGI(ADCButtonNetwork::TAG1, "Button 5 Callback Executed");
-        // 在这里添加按钮5被按下时的处理逻辑
-        auto& board = Board::GetInstance();
-        auto display = board.GetDisplay();
-        display->SetBacklight(0);
-    }
-    );
-    adc_button->registerCallback(5, []() {
-        ESP_LOGI(ADCButtonNetwork::TAG1, "Button 6 Callback Executed");
-        auto& board = Board::GetInstance();
-        auto display = board.GetDisplay();
-        display->SetBacklight(100);
-        // 在这里添加按钮6被按下时的处理逻辑
-    }
-    );
+//     }
+//     );
+//     adc_button->registerCallback(3, []() {
+//         ESP_LOGI(ADCButtonNetwork::TAG1, "Button 4 Callback Executed");
+//         // 在这里添加按钮4被按下时的处理逻辑
+//     }
+//     );
+//     adc_button->registerCallback(4, []() {
+//         ESP_LOGI(ADCButtonNetwork::TAG1, "Button 5 Callback Executed");
+//         // 在这里添加按钮5被按下时的处理逻辑
+//         auto& board = Board::GetInstance();
+//         auto display = board.GetDisplay();
+//         display->SetBacklight(0);
+//     }
+//     );
+//     adc_button->registerCallback(5, []() {
+//         ESP_LOGI(ADCButtonNetwork::TAG1, "Button 6 Callback Executed");
+//         auto& board = Board::GetInstance();
+//         auto display = board.GetDisplay();
+//         display->SetBacklight(100);
+//         // 在这里添加按钮6被按下时的处理逻辑
+//     }
+//     );
+// ADC按键结束
+
     // xTaskCreate([](void *arg)
     // {
     //     Application* app = (Application*)arg;

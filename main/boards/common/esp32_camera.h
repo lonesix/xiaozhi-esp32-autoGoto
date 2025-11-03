@@ -34,6 +34,10 @@ public:
     virtual bool SetHMirror(bool enabled) override;
     virtual bool SetVFlip(bool enabled) override;
     virtual std::string Explain(const std::string& question);
+    std::thread tool_call_thread_;
+    void testCameraToDisplayThread();
+    // 用于调用工具的线程
+    bool testCameraToDisplay();
 };
 
 #endif // ESP32_CAMERA_H

@@ -67,6 +67,27 @@ private:
         pca9557_ = new Pca9557(i2c_bus_, 0x19);
     }
 
+    void I2cDetect() {
+        uint8_t address;
+        printf("     0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f\r\n");
+        for (int i = 0; i < 128; i += 16) {
+            printf("%02x: ", i);
+            for (int j = 0; j < 16; j++) {
+                fflush(stdout);
+                address = i + j;
+                esp_err_t ret = i2c_master_probe(i2c_bus_, address, pdMS_TO_TICKS(200));
+                if (ret == ESP_OK) {
+                    printf("%02x ", address);
+                } else if (ret == ESP_ERR_TIMEOUT) {
+                    printf("UU ");
+                } else {
+                    printf("-- ");
+                }
+            }
+            printf("\r\n");
+        }
+    }
+
     void InitializeSpi() {
         spi_bus_config_t buscfg = {};
         buscfg.mosi_io_num = GPIO_NUM_40;
@@ -85,13 +106,15 @@ private:
                 auto& wifi_board = static_cast<WifiBoard&>(GetCurrentBoard());
                 wifi_board.ResetWifiConfiguration();
             }
+            auto camera = Board::GetInstance().GetCamera();
+            camera->testCameraToDisplayThread();
         });
-        boot_button_.OnPressDown([this]() {
-            Application::GetInstance().StartListening();
-        });
-        boot_button_.OnPressUp([this]() {
-            Application::GetInstance().StopListening();
-        });
+        // boot_button_.OnPressDown([this]() {
+        //     Application::GetInstance().StartListening();
+        // });
+        // boot_button_.OnPressUp([this]() {
+        //     Application::GetInstance().StopListening();
+        // });
     }
 
     void InitializeSt7789Display() {
@@ -187,21 +210,24 @@ private:
         config.xclk_freq_hz = XCLK_FREQ_HZ;
         config.pixel_format = PIXFORMAT_RGB565;
         config.frame_size = FRAMESIZE_VGA;
-        config.jpeg_quality = 12;
+        config.jpeg_quality = 10;
         config.fb_count = 1;
         config.fb_location = CAMERA_FB_IN_PSRAM;
         config.grab_mode = CAMERA_GRAB_WHEN_EMPTY;
 
         camera_ = new Esp32Camera(config);
+        // camera_->testCameraToDisplayThread();
     }
 public:
     NktjDevBoard() : DualNetworkBoard(ML307_TX_PIN, ML307_RX_PIN, 4096, 0),
     boot_button_(BOOT_BUTTON_GPIO) {
         InitializeI2c();
+        I2cDetect();
         InitializeSpi();
         InitializeSt7789Display();
         InitializeButtons();
-        // InitializeCamera();
+        InitializeCamera();
+        // I2cDetect();
         InitializeIot();
     }
 

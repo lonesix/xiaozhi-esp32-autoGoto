@@ -132,4 +132,6 @@ void ui_main_screen_init(void)
     lv_obj_add_event_cb(ui_userTextArea, ui_event_userTextArea, LV_EVENT_ALL, NULL);
     lv_obj_add_event_cb(ui_main, ui_event_main, LV_EVENT_ALL, NULL);
 
+    lv_obj_add_flag(ui_emotionlabel, LV_OBJ_FLAG_HIDDEN);     /// Flags
+    lv_obj_add_flag(ui_userTextArea, LV_OBJ_FLAG_HIDDEN);     /// Flags
 }

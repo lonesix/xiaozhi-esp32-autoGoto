@@ -543,6 +543,7 @@ void next_frame_task_cb(lv_event_t *event)
         printf("----gif play finsh----\n");
 
         ui_init();
+
         /*unicode设置网络标志特殊字体测试*/
         lv_label_set_text(ui_netLabel, wifiIcon[3]);
         lv_label_set_text(ui_volLabel2, volumnIcon[1]);
@@ -603,10 +604,6 @@ void St7789Display::SetupUI()
     #endif
         // auto screen = lv_screen_active();
 
-        preview_image_ = lv_img_create(NULL);
-        lv_obj_set_size(preview_image_, width_ * 0.5, height_ * 0.5);
-        lv_obj_align(preview_image_, LV_ALIGN_CENTER, 0, 0);
-        lv_obj_add_flag(preview_image_, LV_OBJ_FLAG_HIDDEN);
         /*设置textarea_text*/
         // lv_textarea_set_text(ui_AITextArea, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
         /*设置textarea_text*/
@@ -726,25 +723,36 @@ void St7789Display::SetupUI()
 void St7789Display::SetPreviewImage(const lv_img_dsc_t* img_dsc) {
     DisplayLockGuard lock(this);
     if (preview_image_ == nullptr) {
-        return;
+        // ESP_LOGI("SetupUI", "width_=%d,height_=%d",width_, height_);
+        preview_image_ = lv_img_create(ui_Content);
+        // lv_obj_set_size(preview_image_, 320 * 0.5, 240 * 0.5);
+        lv_obj_align(preview_image_, LV_ALIGN_CENTER, 0, 0);
+        
+        lv_obj_add_flag(preview_image_, LV_OBJ_FLAG_HIDDEN);
+        // lv_img_set_src(preview_image_, &ui_img_download_png);
+        // return;
     }
     
     if (img_dsc != nullptr) {
         // lv_img_set_angle
         // zoom factor 0.5
-        lv_img_set_zoom(preview_image_, 128 * width_ / img_dsc->header.w);
+        lv_img_set_zoom(preview_image_, 128 );// * (320 / img_dsc->header.w)
         // 设置图片源并显示预览图片
         lv_img_set_src(preview_image_, img_dsc);
         lv_obj_clear_flag(preview_image_, LV_OBJ_FLAG_HIDDEN);
+
+        
+        // lv_obj_move_foreground(preview_image_);   // 移到同层最前
+        ESP_LOGE("St7789Display", "SetPreviewImage: %d, %d", img_dsc->header.w, img_dsc->header.h);
         // 隐藏emotion_label_
-        if (emotion_label_ != nullptr) {
-            lv_obj_add_flag(emotion_label_, LV_OBJ_FLAG_HIDDEN);
+        if (ui_emotionlabel != nullptr) {
+            lv_obj_add_flag(ui_emotionlabel, LV_OBJ_FLAG_HIDDEN);
         }
     } else {
         // 隐藏预览图片并显示emotion_label_
         lv_obj_add_flag(preview_image_, LV_OBJ_FLAG_HIDDEN);
-        if (emotion_label_ != nullptr) {
-            lv_obj_clear_flag(emotion_label_, LV_OBJ_FLAG_HIDDEN);
+        if (ui_emotionlabel != nullptr) {
+            lv_obj_clear_flag(ui_emotionlabel, LV_OBJ_FLAG_HIDDEN);
         }
     }
 }
