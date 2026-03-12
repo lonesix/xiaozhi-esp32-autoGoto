@@ -29,7 +29,7 @@ const char* ADCButtonNetwork::TAG1 = "adc_button_network";
 bool button_released_ = false;
 bool shutdown_ready_ = false;
 esp_timer_handle_t shutdown_timer;
-
+extern void InitializeFastbeeMcp();
 class AiMagicBoxV2SpotBoard  : public DualNetworkBoard {
 private:
     i2c_master_bus_handle_t i2c_bus_;
@@ -308,7 +308,7 @@ private:
             auto codec = GetAudioCodec();
             auto volume = codec->output_volume() - 10;
             if (volume < 0) {
-                volume = 0;
+                volume = 100;
             }
             codec->SetOutputVolume(volume);
             printf("volume = %d\n", volume);
@@ -470,6 +470,9 @@ private:
     }
 
     void InitializeIot() {
+
+
+#if CONFIG_IOT_PROTOCOL_XIAOZHI
         auto& thing_manager = iot::ThingManager::GetInstance();
         thing_manager.AddThing(iot::CreateThing("Speaker"));
         thing_manager.AddThing(iot::CreateThing("Battery"));
@@ -478,6 +481,17 @@ private:
         thing_manager.AddThing(iot::CreateThing("SdPlayer"));
         #endif
         #endif
+        #ifdef FASTBEE_MCP_IS_EXIST
+        #if FASTBEE_MCP_IS_EXIST == 1
+        thing_manager.AddThing(iot::CreateThing("FastbeeIot"));
+        #endif
+        #endif
+#elif CONFIG_IOT_PROTOCOL_MCP
+        // static LampController lamp(LAMP_GPIO);
+        #if FASTBEE_MCP_IS_EXIST == 1
+        InitializeFastbeeMcp();
+        #endif
+#endif
     }
 
 
@@ -537,6 +551,7 @@ public:
         InitializeButtons();
         setupPowerManagement();
         InitializeIot();
+        // InitializeFastbeeMcp();
     }
     // EspSpotS3Bot() : boot_button_(BOOT_BUTTON_GPIO), key_button_(KEY_BUTTON_GPIO, true) {
     //     InitializePowerCtl();

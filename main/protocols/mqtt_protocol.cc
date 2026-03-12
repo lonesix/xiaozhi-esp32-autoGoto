@@ -51,6 +51,11 @@ bool MqttProtocol::StartMqttClient(bool report_error) {
         }
         return false;
     }
+    printf("MQTT endpoint: %s\n", endpoint_.c_str());
+    printf("MQTT client_id: %s\n", client_id_.c_str());
+    printf("MQTT username: %s\n", username_.c_str());
+    printf("MQTT password: %s\n", password_.c_str());
+    printf("MQTT publish_topic: %s\n", publish_topic_.c_str());
 
     mqtt_ = Board::GetInstance().CreateMqtt();
     mqtt_->SetKeepAlive(90);
@@ -60,11 +65,13 @@ bool MqttProtocol::StartMqttClient(bool report_error) {
     });
 
     mqtt_->OnMessage([this](const std::string& topic, const std::string& payload) {
+        // printf("Received message on topic %s: %s\n", topic.c_str(), payload.c_str());
         cJSON* root = cJSON_Parse(payload.c_str());
         if (root == nullptr) {
             ESP_LOGE(TAG, "Failed to parse json message %s", payload.c_str());
             return;
         }
+        // printf("Received JSON: %s\n", cJSON_Print(root));
         cJSON* type = cJSON_GetObjectItem(root, "type");
         if (type == nullptr) {
             ESP_LOGE(TAG, "Message type is not specified");
@@ -113,6 +120,7 @@ bool MqttProtocol::SendText(const std::string& text) {
     if (publish_topic_.empty()) {
         return false;
     }
+    // printf("Sending text: %s\n", text.c_str());
     if (!mqtt_->Publish(publish_topic_, text)) {
         ESP_LOGE(TAG, "Failed to publish message: %s", text.c_str());
         SetError(Lang::Strings::SERVER_ERROR);
@@ -189,6 +197,10 @@ bool MqttProtocol::OpenAudioChannel() {
     message += "\"transport\":\"udp\",";
 #if CONFIG_USE_SERVER_AEC
     message += "\"features\":{\"aec\":true},";
+#endif
+#if CONFIG_IOT_PROTOCOL_MCP
+    // cJSON_AddBoolToObject(features, "mcp", true);
+    message += "\"features\":{\"mcp\":true},";
 #endif
     message += "\"audio_params\":{";
     message += "\"format\":\"opus\", \"sample_rate\":16000, \"channels\":1, \"frame_duration\":" + std::to_string(OPUS_FRAME_DURATION_MS);

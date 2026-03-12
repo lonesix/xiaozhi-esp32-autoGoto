@@ -9,6 +9,7 @@
 #include "websocket_protocol.h"
 #include "font_awesome_symbols.h"
 #include "iot/thing_manager.h"
+#include "mcp_server.h"
 #include "assets/lang_config.h"
 
 #if CONFIG_USE_AUDIO_PROCESSOR
@@ -684,6 +685,8 @@ void Application::Start() {
     }
 #endif
 
+    McpServer::GetInstance().AddCommonTools();
+
     if (ota_.HasMqttConfig() && ota_.HasWebsocketConfig()) {
         if (prior_ProtocolType == mqtt) {
             protocol_ = std::make_unique<MqttProtocol>();
@@ -720,12 +723,14 @@ void Application::Start() {
                 protocol_->server_sample_rate(), codec->output_sample_rate());
         }
         SetDecodeSampleRate(protocol_->server_sample_rate(), protocol_->server_frame_duration());
+#if CONFIG_IOT_PROTOCOL_XIAOZHI
         auto& thing_manager = iot::ThingManager::GetInstance();
         protocol_->SendIotDescriptors(thing_manager.GetDescriptorsJson());
         std::string states;
         if (thing_manager.GetStatesJson(states, false)) {
             protocol_->SendIotStates(states);
         }
+#endif
     });
     protocol_->OnAudioChannelClosed([this, &board]() {
         board.SetPowerSaveMode(true);
@@ -844,15 +849,24 @@ void Application::Start() {
                     display->SetEmotion(emotion_str.c_str());
                 });
             }
+#if CONFIG_IOT_PROTOCOL_MCP
+        } else if (strcmp(type->valuestring, "mcp") == 0) {
+            auto payload = cJSON_GetObjectItem(root, "payload");
+            if (cJSON_IsObject(payload)) {
+                McpServer::GetInstance().ParseMessage(payload);
+            }
+#endif
+#if CONFIG_IOT_PROTOCOL_XIAOZHI
         } else if (strcmp(type->valuestring, "iot") == 0) {
             auto commands = cJSON_GetObjectItem(root, "commands");
-            if (commands != NULL) {
+            if (cJSON_IsArray(commands)) {
                 auto& thing_manager = iot::ThingManager::GetInstance();
                 for (int i = 0; i < cJSON_GetArraySize(commands); ++i) {
                     auto command = cJSON_GetArrayItem(commands, i);
                     thing_manager.Invoke(command);
                 }
             }
+#endif
         }else if (strcmp(type->valuestring, "command") == 0){
             auto Json_name  = cJSON_GetObjectItem(root, "name");
             if (Json_name  != NULL && (strcmp(Json_name->valuestring, "LLM") == 0)) {
@@ -1248,7 +1262,9 @@ void Application::SetDeviceState(DeviceState state) {
             display->SetStatus(Lang::Strings::LISTENING);
             display->SetEmotion("neutral");
             // Update the IoT states before sending the start listening command
+            #if CONFIG_IOT_PROTOCOL_XIAOZHI
             UpdateIotStates();
+            #endif
 
             // Make sure the audio processor is running
             if (!audio_processor_->IsRunning()) {
@@ -1308,11 +1324,13 @@ void Application::SetDecodeSampleRate(int sample_rate, int frame_duration) {
 }
 
 void Application::UpdateIotStates() {
+    #if CONFIG_IOT_PROTOCOL_XIAOZHI
     auto& thing_manager = iot::ThingManager::GetInstance();
     std::string states;
     if (thing_manager.GetStatesJson(states, true)) {
         protocol_->SendIotStates(states);
     }
+#endif
 }
 
 void Application::Reboot() {
@@ -1352,4 +1370,12 @@ bool Application::CanEnterSleepMode() {
 
     // Now it is safe to enter sleep mode
     return true;
+}
+
+void Application::SendMcpMessage(const std::string& payload) {
+    Schedule([this, payload]() {
+        if (protocol_) {
+            protocol_->SendMcpMessage(payload);
+        }
+    });
 }

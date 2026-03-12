@@ -8,6 +8,17 @@
 #include "esp_vfs.h"
 #include <fstream>
 
+#define IS_V4  1
+#ifdef IS_V4
+#define CHARGE_GPIO              GPIO_NUM_41
+#define VOLUME_ADD_BUTTON_GPIO   GPIO_NUM_11
+#define VOLUME_SUB_BUTTON_GPIO   GPIO_NUM_10
+#else
+#define CHARGE_GPIO              GPIO_NUM_38
+#define VOLUME_ADD_BUTTON_GPIO   GPIO_NUM_10
+#define VOLUME_SUB_BUTTON_GPIO   GPIO_NUM_42
+#endif
+
 #define NET_IS_WIFI_OR_ML307 NET_IS_WIFI
 #define NET_IS_WIFI 0
 #define NET_IS_ML307 1
@@ -15,12 +26,12 @@
 #define ML307_RX_PIN GPIO_NUM_47
 #define ML307_TX_PIN GPIO_NUM_48
 // #endif
-#define IMU_BMI270_IS_EXIST 1 // 1:exist 0:not exist
+#define IMU_BMI270_IS_EXIST 0 // 1:exist 0:not exist
 #define TISHIYIN_IS_EXIST 1 // 1:exist 0:not exist
-#define SLEEP_MODE_IS_EXIST 1 // 1:exist 0:not exist
-#define SD_IS_EXIST 1 // 1:exist 0:not exist
+#define SLEEP_MODE_IS_EXIST 0 // 1:exist 0:not exist
+#define SD_IS_EXIST 0 // 1:exist 0:not exist
 #define CHARGE_QUWEI_IS_EXIST 1 // 1:exist 0:not exist
-
+#define FASTBEE_MCP_IS_EXIST 1 // 1:exist 0:not exist
 
 
 enum SERVERCONNECTIONMETHOD{
@@ -38,8 +49,8 @@ enum SERVERCONNECTIONMETHOD{
 #define XIAOZHI_WS_SERVER_URL "wss://api.tenclass.net/xiaozhi/v1/"
 
 
-#define AUDIO_INPUT_SAMPLE_RATE  16000
-#define AUDIO_OUTPUT_SAMPLE_RATE 16000
+#define AUDIO_INPUT_SAMPLE_RATE  24000
+#define AUDIO_OUTPUT_SAMPLE_RATE 24000
 
 #define AUDIO_INPUT_REFERENCE    false
 
@@ -60,13 +71,12 @@ enum SERVERCONNECTIONMETHOD{
 #define LED_PIN                  GPIO_NUM_3
 #define WAI_KEY_GPIO             GPIO_NUM_14
 #define WAI4_KEY_GPIO             GPIO_NUM_21
-#define CHARGE_GPIO              GPIO_NUM_38
+
 // #define VOLUME_BUTTON_GPIO       GPIO_NUM_10
 // #define VOLUME_BUTTON_CHANNEL      ADC_CHANNEL_9
 #define IMU_BMI270_INT_PIN       GPIO_NUM_13
 #define VCC_4G_EXTERNAL_VOICE_WAKE_UP_EN GPIO_NUM_12
-#define VOLUME_ADD_BUTTON_GPIO   GPIO_NUM_10
-#define VOLUME_SUB_BUTTON_GPIO   GPIO_NUM_42
+
 
 #define VBAT_ADC_CHANNEL         ADC_CHANNEL_8  // S3: IO9
 #define MCU_VCC_CTL              GPIO_NUM_NC     // set 1 to power on MCU

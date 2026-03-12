@@ -207,6 +207,10 @@ bool WebsocketProtocol::OpenAudioChannel() {
 #if CONFIG_USE_SERVER_AEC
     message += "\"features\":{\"aec\":true},";
 #endif
+#if CONFIG_IOT_PROTOCOL_MCP
+    // cJSON_AddBoolToObject(features, "mcp", true);
+    message += "\"features\":{\"mcp\":true},";
+#endif
     message += "\"transport\":\"websocket\",";
     message += "\"audio_params\":{";
     message += "\"format\":\"opus\", \"sample_rate\":16000, \"channels\":1, \"frame_duration\":" + std::to_string(OPUS_FRAME_DURATION_MS);

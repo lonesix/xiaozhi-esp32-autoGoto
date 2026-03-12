@@ -157,7 +157,7 @@ public:
 
     #endif
     bool CanEnterSleepMode();
-  
+    void SendMcpMessage(const std::string& payload);
 
 private:
     Application();
